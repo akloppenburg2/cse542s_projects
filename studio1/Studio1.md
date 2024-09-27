@@ -16,14 +16,14 @@
     3. rustdoc 1.71.0 (8ede3aae2 2023-07-12)
 
 4. Hello cargo files output
-    1. 
+    1. ![step 4 answer](images/step4.png)
 
 5. Cargo run output
     1. 
 
 6. Hello binary output
     1. 
-    
+
 7. CSE 542S Programming Guidelines summaries
     1. Guideline A.4 basically states that, when submitting code, we should test it exhaustively.  Instead of designing our code to simply pass the tests of the assignment, we should be considering extra testing (edge cases, different input from the user or lack thereof, input at odd times, etc).
     2. Guideline B.1 states that we should avoid using the “unsafe” keyword when possible to ensure that the code is “safe”. If you were to use “unsafe” rust, you must explain in a comment why this was used and how it can still be considered safe.

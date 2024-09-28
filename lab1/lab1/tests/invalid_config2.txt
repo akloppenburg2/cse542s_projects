@@ -1,0 +1,3 @@
+TITLE OF THE PLAY HERE!!!  
+ CHAR2 tests/char_2.txt extra_token
+    CHAR3 tests/char_3.txt extra tokens

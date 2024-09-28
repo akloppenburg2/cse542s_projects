@@ -50,10 +50,12 @@ pub fn grab_trimmed_file_lines(file_name: &String, lines: &mut Vec<String>) -> R
 
 // Function to process the PlayConfig and generate the Play script
 pub fn process_config(play: &mut Play, play_config: &PlayConfig) -> Result<(), u8> {
+
     // Iterate through each tuple in PlayConfig (character name, file name)
     for config in play_config {
         match config {
             (part_name, file_name) => {
+                // Vector to store lines
                 let mut lines = Vec::new();
 
                 // Call grab_trimmed_file_lines to read and trim lines from the file

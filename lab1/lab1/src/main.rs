@@ -2,10 +2,11 @@
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // Lab1 main
 
+include!("script_gen.rs");  // Include the script_gen.rs file
+
 use std::env;
 use std::sync::atomic::Ordering;
 
-mod script_gen;  // Import the script_gen module
 mod declarations;  // Import the declarations module
 
 fn main() -> Result<(), u8> {
@@ -21,15 +22,15 @@ fn main() -> Result<(), u8> {
     let mut play_title = String::new();
     let mut play: declarations::Play = declarations::Play(Vec::new());
 
-    // Call script_gen and handle errors
-    if let Err(err) = script_gen::script_gen(&config, &mut play_title, &mut play) {
+    // Call the script_gen function directly (no need for script_gen:: prefix)
+    if let Err(err) = script_gen(&config, &mut play_title, &mut play) {
         return Err(err);  // Return error if script generation failed
     }
 
     // Sort the play by line number
     play.0.sort_by_key(|line| line.0);
 
-    // Recite the play
+    // Recite the play (assuming recite is implemented in main.rs)
     recite(&play_title, &play);
 
     // Indicate successful completion

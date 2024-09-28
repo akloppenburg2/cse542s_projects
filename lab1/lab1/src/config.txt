@@ -1,0 +1,3 @@
+The Play Title
+CharacterA char_a.txt
+CharacterB char_b.txt

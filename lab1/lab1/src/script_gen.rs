@@ -1,6 +1,19 @@
+// script_gen.rs
+
 use std::fs::File;
-use std::io::{BufRead, BufReader};  // Remove the `self` part since it's unused
+use std::io::{BufRead, BufReader};
+
 use crate::declarations::{Play, GEN_SCRIPT_ERR, DEBUG};
+
+// PlayConfig is a vector of tuples (character_name, filename)
+pub type PlayConfig = Vec<(String, String)>;
+
+// Constants for parsing the configuration file
+pub const TITLE_LINE_INDEX: usize = 0;                   // Index for the title in the config file
+pub const FIRST_CHARACTER_LINE_INDEX: usize = 1;          // Index where character lines start
+pub const CHARACTER_NAME_INDEX: usize = 0;                // Index of character name in a line
+pub const FILE_NAME_INDEX: usize = 1;                     // Index of file name in a line
+pub const EXPECTED_TOKENS: usize = 2;                     // Expected number of tokens per line
 
 pub fn script_gen(config_file: &String, play_title: &mut String, play: &mut Play) -> Result<(), u8> {
     // Open the configuration file and map the io::Error to u8 error using GEN_SCRIPT_ERR

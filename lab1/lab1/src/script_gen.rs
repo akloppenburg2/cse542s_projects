@@ -4,6 +4,7 @@ use std::io::{BufReader, BufRead};
 // Define PlayConfig as a vector of (character name, file name) tuples
 pub type PlayConfig = Vec<(String, String)>;
 
+// Script generation constants
 pub const TITLE_IDX: usize = 0;
 pub const CHAR_NAME_LINE: usize = 0;
 pub const FILE_LINE: usize = 1;
@@ -50,54 +51,21 @@ pub fn grab_trimmed_file_lines(file_name: &String, lines: &mut Vec<String>) -> R
 // Function to process the PlayConfig and generate the Play script
 pub fn process_config(play: &mut Play, play_config: &PlayConfig) -> Result<(), u8> {
     // Iterate through each tuple in PlayConfig (character name, file name)
-    for (part_name, file_name) in play_config {
-        let mut lines = Vec::new();
+    for config in play_config {
+        match config {
+            (part_name, file_name) => {
+                let mut lines = Vec::new();
 
-        // Call grab_trimmed_file_lines to read and trim lines from the file
-        if let Err(_) = grab_trimmed_file_lines(file_name, &mut lines) {
-            eprintln!("Error: Failed to process file for part '{}'", part_name);
-            return Err(GEN_SCRIPT_ERR);
-        }
-
-        // Add each line to the Play using add_script_line
-        for line in &lines {
-            add_script_line(play, line, part_name);
-        }
-    }
-
-    Ok(())
-}
-
-// Main script generation function
-pub fn script_gen(config_file: &String, play_title: &mut String, play: &mut Play) -> Result<(), u8> {
-    // Open the configuration file
-    let file = File::open(config_file).map_err(|_| GEN_SCRIPT_ERR)?;
-    let reader = BufReader::new(file);
-    
-    let mut lines = reader.lines();
-    
-    // Read the title of the play
-    if let Some(Ok(title)) = lines.next() {
-        *play_title = title;
-    } else {
-        return Err(GEN_SCRIPT_ERR);  // If no title, return an error
-    }
-
-    // Process each character and file pair
-    for line in lines {
-        if let Ok(line) = line {
-            let parts: Vec<&str> = line.split_whitespace().collect();
-
-            if parts.len() == 2 {
-                let character_name = parts[0].to_string();
-                let character_file = parts[1];
-
-                // Read the character's file and add lines to the play
-                if let Err(_) = read_character_file(character_file, &character_name, play) {
+                // Call grab_trimmed_file_lines to read and trim lines from the file
+                if let Err(_) = grab_trimmed_file_lines(file_name, &mut lines) {
+                    eprintln!("Error: Failed to process file for part '{}'", part_name);
                     return Err(GEN_SCRIPT_ERR);
                 }
-            } else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
-                eprintln!("Warning: Badly formed line in config: {}", line);
+
+                // Add each line to the Play using add_script_line
+                for line in &lines {
+                    add_script_line(play, line, part_name);
+                }
             }
         }
     }
@@ -105,16 +73,57 @@ pub fn script_gen(config_file: &String, play_title: &mut String, play: &mut Play
     Ok(())
 }
 
-// Function to read lines from a character's file and add them to the Play structure
-pub fn read_character_file(file_name: &str, character_name: &str, play: &mut Play) -> Result<(), u8> {
-    let file = File::open(file_name).map_err(|_| GEN_SCRIPT_ERR)?;
-    let reader = BufReader::new(file);
+pub fn add_config(line: &String, play_config: &mut PlayConfig) {
 
-    for line in reader.lines() {
-        if let Ok(line) = line {
-            // Convert &str to &String for character_name
-            add_script_line(play, &line, &character_name.to_string());  // Fix: Convert &str to &String
-        }
+    // Tokenize line
+    let tokens: Vec<&str> = line.split_whitespace().collect();
+
+    if tokens.len() == 2 {
+        play_config.push((tokens[0].to_string(), tokens[1].to_string()));
+    }
+    else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
+        eprintln!("Warning: Badly formed line in config: {}", line);
+    }
+
+}
+
+pub fn read_config(config_file: &String, play_title: &mut String, play_config: &mut PlayConfig) -> Result<(), u8> {
+
+    // Vector for lines
+    let mut lines = Vec::new();
+
+    // Call grab_trimmed_file_lines to read and trim lines from the file
+    if let Err(_) = grab_trimmed_file_lines(config_file, &mut lines) {
+        eprintln!("Error: Failed to process file: '{}'", config_file);
+        return Err(GEN_SCRIPT_ERR);
+    }
+
+    // Set title to first element
+    *play_title = lines.remove(0);
+
+    // Add remaining elements to config
+    for line in lines
+    {
+        add_config(&line, play_config);
+    }
+
+    Ok(())
+
+}
+
+// Main script generation function
+pub fn script_gen(config_file: &String, play_title: &mut String, play: &mut Play) -> Result<(), u8> {
+    
+    // Initialize and then read config
+    let mut play_config = PlayConfig::new(); 
+    if let Err(_) = read_config(config_file, play_title, &mut play_config){
+        eprintln!("Error: Failed to read config '{}'", config_file);
+        return Err(GEN_SCRIPT_ERR);
+    }
+
+    if let Err(_) = process_config(play, &play_config){
+        eprintln!("Error: Failed to process config '{}'", config_file);
+        return Err(GEN_SCRIPT_ERR);
     }
 
     Ok(())

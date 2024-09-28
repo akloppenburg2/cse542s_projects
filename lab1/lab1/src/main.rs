@@ -16,6 +16,7 @@ fn main() -> Result<(), u8> {
 
     // Call parse_args and handle errors
     if let Err(err) = parse_args(&mut config) {
+        eprintln!("Error parsing arguments!");
         return Err(err);  // Return error for bad command line arguments
     }
 
@@ -25,6 +26,7 @@ fn main() -> Result<(), u8> {
 
     // Call the script_gen function directly (no need for script_gen:: prefix)
     if let Err(err) = script_gen(&config, &mut play_title, &mut play) {
+        eprintln!("Error generating script!");
         return Err(err);  // Return error if script generation failed
     }
 

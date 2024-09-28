@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
-use crate::declarations::{Play, GEN_SCRIPT_ERR, DEBUG};  // Import from declarations
+use crate::declarations::{Play, PlayConfig, GEN_SCRIPT_ERR, DEBUG};  // Import error codes and types from declarations
 
 // Function to grab and trim lines from a file
 pub fn grab_trimmed_file_lines(file_name: &String, lines: &mut Vec<String>) -> Result<(), u8> {
@@ -36,6 +36,27 @@ pub fn grab_trimmed_file_lines(file_name: &String, lines: &mut Vec<String>) -> R
             }
         }
     }
+}
+
+// Function to process the PlayConfig and generate the Play script
+pub fn process_config(play: &mut Play, play_config: &PlayConfig) -> Result<(), u8> {
+    // Iterate through each tuple in PlayConfig (character name, file name)
+    for (part_name, file_name) in play_config {
+        let mut lines = Vec::new();
+
+        // Call grab_trimmed_file_lines to read and trim lines from the file
+        if let Err(_) = grab_trimmed_file_lines(file_name, &mut lines) {
+            eprintln!("Error: Failed to process file for part '{}'", part_name);
+            return Err(GEN_SCRIPT_ERR);
+        }
+
+        // Add each line to the Play using add_script_line
+        for line in &lines {
+            add_script_line(play, line, part_name);
+        }
+    }
+
+    Ok(())
 }
 
 // Main script generation function

@@ -5,12 +5,11 @@ use std::io::{BufReader, BufRead};
 pub type PlayConfig = Vec<(String, String)>;
 
 // Script generation constants
-pub const TITLE_IDX: usize = 0;
-pub const CHAR_NAME_LINE: usize = 0;
-pub const FILE_LINE: usize = 1;
-pub const CHAR_TOKEN_IDK: usize = 0;
-pub const FILE_TOKEN_IDK: usize = 1;
-pub const TOKENS: usize = 2;
+pub const TITLE_INDEX: usize = 0;
+pub const CHAR_NAME_LINE: usize = 1;
+pub const CHAR_TOKEN_INDEX: usize = 0;
+pub const FILE_TOKEN_INDEX: usize = 1;
+pub const NUM_TOKENS: usize = 2;
 
 // Function to grab and trim lines from a file
 pub fn grab_trimmed_file_lines(file_name: &String, lines: &mut Vec<String>) -> Result<(), u8> {
@@ -80,8 +79,8 @@ pub fn add_config(line: &String, play_config: &mut PlayConfig) {
     // Tokenize line
     let tokens: Vec<&str> = line.split_whitespace().collect();
 
-    if tokens.len() == 2 {
-        play_config.push((tokens[0].to_string(), tokens[1].to_string()));
+    if tokens.len() == NUM_TOKENS {
+        play_config.push((tokens[CHAR_TOKEN_INDEX].to_string(), tokens[FILE_TOKEN_INDEX].to_string()));
     }
     else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
         eprintln!("Warning: Badly formed line in config: {}", line);
@@ -101,7 +100,7 @@ pub fn read_config(config_file: &String, play_title: &mut String, play_config: &
     }
 
     // Set title to first element
-    *play_title = lines.remove(0);
+    *play_title = lines.remove(TITLE_INDEX);
 
     // Add remaining elements to config
     for line in lines

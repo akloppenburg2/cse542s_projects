@@ -79,9 +79,10 @@ fn recite(title: &String, play: &Play) {
                     println!();
                     println!("{}.", character);
                     current_character = Some(character.clone());
-                } else {
-                    println!("{text}");
                 }
+                
+                // Print text
+                println!("{text}");
             }
         }
     }

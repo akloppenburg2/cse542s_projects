@@ -2,12 +2,13 @@
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // Lab1 main
 
+include!("declarations.rs"); // Include the declarations.rs file
 include!("script_gen.rs");  // Include the script_gen.rs file
 
 use std::env;
 use std::sync::atomic::Ordering;
 
-mod declarations;  // Import the declarations module
+// mod declarations;  // Import the declarations module
 
 fn main() -> Result<(), u8> {
     // Declare a mutable variable for the configuration file name
@@ -20,7 +21,7 @@ fn main() -> Result<(), u8> {
 
     // Declare mutable variables for the play title and play structure
     let mut play_title = String::new();
-    let mut play: declarations::Play = declarations::Play(Vec::new());
+    let mut play: Play = Play(Vec::new());
 
     // Call the script_gen function directly (no need for script_gen:: prefix)
     if let Err(err) = script_gen(&config, &mut play_title, &mut play) {
@@ -42,11 +43,15 @@ fn usage(name: &str) {
 }
 
 fn parse_args(config: &mut String) -> Result<(), u8> {
-    let args: Vec<String> = env::args().collect();
+    let mut args = Vec::new();
+
+    for arg in env::args() {
+        args.push(arg);
+    }
 
     if args.len() < 2 || args.len() > 3 || (args.len() == 3 && args[2] != "whinge") {
         usage(&args[0]);
-        return Err(declarations::CMD_LINE_ERR); // CMD_LINE_ERR should be defined in declarations.rs
+        return Err(CMD_LINE_ERR); // CMD_LINE_ERR should be defined in declarations.rs
     }
 
     // Set the config file name
@@ -54,24 +59,28 @@ fn parse_args(config: &mut String) -> Result<(), u8> {
 
     // Check if the third argument is "whinge"
     if args.len() == 3 && args[2] == "whinge" {
-        declarations::DEBUG.store(true, Ordering::SeqCst); // DEBUG should be an AtomicBool defined in declarations.rs
+        DEBUG.store(true, Ordering::SeqCst); // DEBUG should be an AtomicBool defined in declarations.rs
     }
 
     Ok(())
 }
 
-fn recite(title: &String, play: &declarations::Play) {
+fn recite(title: &String, play: &Play) {
     println!("{}", title);
     let mut current_character: Option<String> = None;
 
-    for (_, character, text) in &play.0 {
-        if Some(character.clone()) != current_character {
-            // New character speaking
-            println!();
-            println!("{}.", character);
-            current_character = Some(character.clone());
+    for line in &play.0 {
+        match line {
+            (_, character, text) => {
+                if Some(character.clone()) != current_character {
+                    // New character speaking
+                    println!();
+                    println!("{}.", character);
+                    current_character = Some(character.clone());
+                } else {
+                    println!("{text}");
+                }
+            }
         }
-        // Print the text of the line
-        println!("{}", text);
     }
 }

@@ -5,9 +5,6 @@
 // Define the Play struct which holds a vector of (line number, character, line text) tuples
 pub struct Play(pub Vec<(usize, String, String)>);
 
-// Define PlayConfig as a vector of (character name, file name) tuples
-pub type PlayConfig = Vec<(String, String)>;
-
 // Command line argument constants
 #[allow(dead_code)]
 pub const MAX_ARGS: usize = 3;

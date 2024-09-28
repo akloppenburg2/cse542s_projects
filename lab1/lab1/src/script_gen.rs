@@ -1,6 +1,15 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
-use crate::declarations::{Play, PlayConfig, GEN_SCRIPT_ERR, DEBUG};  // Import error codes and types from declarations
+
+// Define PlayConfig as a vector of (character name, file name) tuples
+pub type PlayConfig = Vec<(String, String)>;
+
+pub const TITLE_IDX: usize = 0;
+pub const CHAR_NAME_LINE: usize = 0;
+pub const FILE_LINE: usize = 1;
+pub const CHAR_TOKEN_IDK: usize = 0;
+pub const FILE_TOKEN_IDK: usize = 1;
+pub const TOKENS: usize = 2;
 
 // Function to grab and trim lines from a file
 pub fn grab_trimmed_file_lines(file_name: &String, lines: &mut Vec<String>) -> Result<(), u8> {

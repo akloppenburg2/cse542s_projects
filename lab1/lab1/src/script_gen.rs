@@ -78,7 +78,7 @@ pub fn script_gen(config_file: &String, play_title: &mut String, play: &mut Play
     
     // Read the title of the play
     if let Some(Ok(title)) = lines.next() {
-        *play_title = title;
+        *play_title = title.trim().to_string();
     } else {
         return Err(GEN_SCRIPT_ERR);  // If no title, return an error
     }
@@ -86,7 +86,7 @@ pub fn script_gen(config_file: &String, play_title: &mut String, play: &mut Play
     // Process each character and file pair
     for line in lines {
         if let Ok(line) = line {
-            let parts: Vec<&str> = line.split_whitespace().collect();
+            let parts: Vec<&str> = line.trim().split_whitespace().collect();
 
             if parts.len() == 2 {
                 let character_name = parts[0].to_string();

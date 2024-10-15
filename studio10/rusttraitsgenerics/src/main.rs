@@ -1,5 +1,6 @@
 use std::fmt;
 
+// Declare Directions Enum
 #[derive(Debug)]
 enum Directions {
     North,
@@ -8,6 +9,7 @@ enum Directions {
     West,
 }
 
+// Implement display trait for Directions Enum
 impl fmt::Display for Directions {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -19,19 +21,23 @@ impl fmt::Display for Directions {
     }
 }
 
+// Declare trait Mover
 trait Mover {
     fn advance(&mut self);
 }
 
+// Declare Enum Rotation
 enum Rotation {
     Left,
     Right,
 }
 
+// Declare trait Turner
 trait Turner {
     fn turn(&mut self, r: Rotation);
 }
 
+// Declare struct Car
 #[derive(Debug)]
 struct Car {
     name: String,
@@ -40,7 +46,9 @@ struct Car {
     dir: Directions,
 }
 
+// Implement block for Car struct
 impl Car {
+    // fn creating new instance of Car
     pub fn new() -> Self {
         Self {
             name: "Lightning".to_string(),
@@ -51,7 +59,9 @@ impl Car {
     }
 }
 
+// Implement Mover trait for Car
 impl Mover for Car {
+    // Advance the car one position depending on its direction
     fn advance(&mut self) {
         match self.dir {
             Directions::North => self.y_pos += 1,
@@ -62,7 +72,9 @@ impl Mover for Car {
     }
 }
 
+// Implement Turner trait for Car
 impl Turner for Car {
+    // Turn car based on current facing direction
     fn turn(&mut self, r: Rotation) {
         match r {
             Rotation::Left => {
@@ -85,6 +97,7 @@ impl Turner for Car {
     }
 }
 
+// Car performs a figure 8 while printing every step
 fn figure_eight<T: Mover + Turner + std::fmt::Debug> (c: &mut T) {
     c.advance();
     println!("var: {:?}", c);

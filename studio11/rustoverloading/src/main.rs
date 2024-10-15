@@ -1,6 +1,7 @@
 use std::fmt;
 use std::ops::{AddAssign, SubAssign};
 
+// Declare Directions Enum
 #[derive(Debug)]
 enum Directions {
     North,
@@ -9,6 +10,7 @@ enum Directions {
     West,
 }
 
+// Implement Display trait for Directions
 impl fmt::Display for Directions {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -20,19 +22,23 @@ impl fmt::Display for Directions {
     }
 }
 
+// Declare Mover trait
 trait Mover {
     fn advance(&mut self);
 }
 
+// Declare Rotation enum
 enum Rotation {
     Left,
     Right,
 }
 
+// Declare Turner trait
 trait Turner {
     fn turn(&mut self, r: Rotation);
 }
 
+// Declare Car Struct 
 #[derive(Debug)]
 struct Car {
     name: String,
@@ -40,7 +46,9 @@ struct Car {
     dir: Directions,
 }
 
+// Implement block for Car struct
 impl Car {
+    // Creates new instance of Car
     pub fn new() -> Self {
         Self {
             name: "Lightning".to_string(),
@@ -49,6 +57,7 @@ impl Car {
         }
     }
 
+    // moves Car back to original position and direction
     pub fn home(&mut self) {
         self.dir = Directions::North;
 
@@ -72,7 +81,9 @@ impl Car {
     }
 }
 
+// Implement Mover trait for Car
 impl Mover for Car {
+    // Advance the car one position depending on its direction
     fn advance(&mut self) {
         match self.dir {
             Directions::North => self.pos += Position::new(0, 1),
@@ -83,7 +94,9 @@ impl Mover for Car {
     }
 }
 
+// Implement Turner trait for Car
 impl Turner for Car {
+    // Turn car based on current facing direction
     fn turn(&mut self, r: Rotation) {
         match r {
             Rotation::Left => {
@@ -106,13 +119,16 @@ impl Turner for Car {
     }
 }
 
+// Declare Position Struct
 #[derive(Debug)]
 struct Position {
     x: isize,
     y: isize,
 }
 
+// Implement Block for Position
 impl Position {
+    // Creates a new instance of Position
     pub fn new(x: isize, y: isize) -> Self {
         Self {
             x,
@@ -121,6 +137,7 @@ impl Position {
     }
 }
 
+// Overload Add for Position Struct
 impl AddAssign for Position {
     fn add_assign(&mut self, rhs: Self) {
         *self = Self {
@@ -130,6 +147,7 @@ impl AddAssign for Position {
     }
 }
 
+// Overload Sub for Position Struct
 impl SubAssign for Position {
     fn sub_assign(&mut self, rhs: Self) {
         *self = Self {
@@ -139,6 +157,7 @@ impl SubAssign for Position {
     }
 }
 
+// Car performs a figure 8 while printing every step
 fn figure_eight<T: Mover + Turner + std::fmt::Debug> (c: &mut T) {
     c.advance();
     println!("var: {:?}", c);

@@ -1,0 +1,2 @@
+1 First line of dialogue for CharacterA.
+2 Second line of dialogue for CharacterA.

@@ -1,0 +1,5 @@
+   TITLE OF THE PLAY HERE!!!  
+ CHAR1 tests/char_1.txt
+ CHAR2 tests/char_2.txt
+    CHAR3 tests/char_3.txt
+    

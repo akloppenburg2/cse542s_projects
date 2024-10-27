@@ -1,4 +1,4 @@
 TITLE OF THE PLAY HERE!!!  
  CHAR1 
- CHAR2 tests/char_2.txt
-    CHAR3 tests/char_3.txt
+ CHAR2 char_2.txt
+    CHAR3 char_3.txt

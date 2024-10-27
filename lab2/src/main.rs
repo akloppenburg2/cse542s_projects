@@ -8,14 +8,15 @@ include!("script_gen.rs");  // Include the script_gen.rs file
 use std::env;
 use std::sync::atomic::Ordering;
 
-// mod declarations;  // Import the declarations module
+// TODO: document functions
 
 fn main() -> Result<(), u8> {
-    // Declare a mutable variable for the configuration file name
+    // Declare two mutable variables for the configuration file name and the part files directory (if one is provided)
     let mut config = String::new();
+    let mut part_files_dir = String::new();
 
     // Call parse_args and handle errors
-    if let Err(err) = parse_args(&mut config) {
+    if let Err(err) = parse_args(&mut config, &mut part_files_dir) {
         eprintln!("Error parsing arguments!");
         return Err(err);  // Return error for bad command line arguments
     }
@@ -25,7 +26,7 @@ fn main() -> Result<(), u8> {
     let mut play: Play = Play(Vec::new());
 
     // Call the script_gen function directly (no need for script_gen:: prefix)
-    if let Err(err) = script_gen(&config, &mut play_title, &mut play) {
+    if let Err(err) = script_gen(&config, &part_files_dir, &mut play_title, &mut play) {
         eprintln!("Error generating script!");
         return Err(err);  // Return error if script generation failed
     }
@@ -40,18 +41,20 @@ fn main() -> Result<(), u8> {
     Ok(())
 }
 
+
 fn usage(name: &str) {
-    println!("usage: {} <configuration_file> [whinge]", name);
+    println!("usage: {} <configuration_file> [part_files_dir] [whinge/nowhinge]", name);
 }
 
-fn parse_args(config: &mut String) -> Result<(), u8> {
+fn parse_args(config: &mut String, part_files_dir: &mut String) -> Result<(), u8> {
     let mut args = Vec::new();
 
     for arg in env::args() {
         args.push(arg);
     }
 
-    if args.len() < 2 || args.len() > 3 || (args.len() == 3 && args[2] != "whinge") {
+    if args.len() < 2 || args.len() > 4
+    {
         usage(&args[0]);
         return Err(CMD_LINE_ERR); // CMD_LINE_ERR should be defined in declarations.rs
     }
@@ -59,9 +62,39 @@ fn parse_args(config: &mut String) -> Result<(), u8> {
     // Set the config file name
     *config = args[1].clone();
 
-    // Check if the third argument is "whinge"
-    if args.len() == 3 && args[2] == "whinge" {
+    // If an optional argument is provided that is NOT whinge/nowhinge, it's our part files directory
+    if args.len() > 2
+    {
+        for arg in args[2..].iter()
+        {
+            if arg != "whinge" && arg != "nowhinge"
+            {
+                *part_files_dir = arg.to_string();
+                break;
+            }
+        }
+    }
+
+    // If no part files directory is provided, use the directory the config file is in
+    if part_files_dir.is_empty()
+    {
+        // Get the location of the last '/' character in the string
+        match config.rfind('/')
+        {
+            Some(index) => *part_files_dir = config[..index + 1].to_string(),   // If there is a / found, get the substring up to that point (i.e. the directory the files are in)
+            None             => {}, // If no / is found, the files are in the currect directory and we leave it as ""
+        }
+        
+    }
+
+    // If "whinge" or "nowhinge" are provided as arguments, set the debug falg accordingly (off by default)
+    if args.contains(&"whinge".to_string())
+    {
         DEBUG.store(true, Ordering::SeqCst); // DEBUG should be an AtomicBool defined in declarations.rs
+    }
+    else if args.contains(&"nowhinge".to_string()) || !args.contains(&"whinge".to_string())
+    {
+        DEBUG.store(false, Ordering::SeqCst); // DEBUG should be an AtomicBool defined in declarations.rs
     }
 
     Ok(())

@@ -74,13 +74,13 @@ pub fn process_config(play: &mut Play, play_config: &PlayConfig) -> Result<(), u
     Ok(())
 }
 
-pub fn add_config(line: &String, play_config: &mut PlayConfig) {
-
+pub fn add_config(line: &String, play_config: &mut PlayConfig, part_files_dir: String) {
     // Tokenize line
     let tokens: Vec<&str> = line.split_whitespace().collect();
 
+    // When adding filenames to the PlayConfig struct, we prepend the directory they're located in
     if tokens.len() == NUM_TOKENS {
-        play_config.push((tokens[CHAR_TOKEN_INDEX].to_string(), tokens[FILE_TOKEN_INDEX].to_string()));
+        play_config.push((tokens[CHAR_TOKEN_INDEX].to_string(), part_files_dir + tokens[FILE_TOKEN_INDEX]));
     }
     else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
         eprintln!("Warning: Badly formed line in config: {}", line);
@@ -88,7 +88,7 @@ pub fn add_config(line: &String, play_config: &mut PlayConfig) {
 
 }
 
-pub fn read_config(config_file: &String, play_title: &mut String, play_config: &mut PlayConfig) -> Result<(), u8> {
+pub fn read_config(config_file: &String, part_files_dir: &String, play_title: &mut String, play_config: &mut PlayConfig) -> Result<(), u8> {
 
     // Vector for lines
     let mut lines = Vec::new();
@@ -105,7 +105,7 @@ pub fn read_config(config_file: &String, play_title: &mut String, play_config: &
     // Add remaining elements to config
     for line in lines
     {
-        add_config(&line, play_config);
+        add_config(&line, play_config, part_files_dir.to_string());
     }
 
     Ok(())
@@ -113,11 +113,11 @@ pub fn read_config(config_file: &String, play_title: &mut String, play_config: &
 }
 
 // Main script generation function
-pub fn script_gen(config_file: &String, play_title: &mut String, play: &mut Play) -> Result<(), u8> {
+pub fn script_gen(config_file: &String, part_files_dir: &String, play_title: &mut String, play: &mut Play) -> Result<(), u8> {
     
     // Initialize and then read config
     let mut play_config = PlayConfig::new(); 
-    if let Err(_) = read_config(config_file, play_title, &mut play_config){
+    if let Err(_) = read_config(config_file, part_files_dir, play_title, &mut play_config){
         eprintln!("Error: Failed to read config '{}'", config_file);
         return Err(GEN_SCRIPT_ERR);
     }

@@ -1,3 +1,3 @@
 The Play Title
-CharacterA tests/char_a.txt
-CharacterB tests/char_b.txt
+CharacterA char_a.txt
+CharacterB char_b.txt

@@ -2,10 +2,12 @@
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // Lab1 main
 
+pub mod lab2;
+
 use std::env;
 use std::sync::atomic::Ordering;
-
-pub mod lab2;
+use crate::lab2::declarations::{Play, DEBUG, GEN_SCRIPT_ERR, CMD_LINE_ERR};
+use crate::lab2::script_gen::script_gen;
 
 // TODO: document functions
 

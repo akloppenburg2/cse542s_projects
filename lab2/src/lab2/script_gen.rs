@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
+use crate::{Play, DEBUG, GEN_SCRIPT_ERR};
 
 // Define PlayConfig as a vector of (character name, file name) tuples
 pub type PlayConfig = Vec<(String, String)>;

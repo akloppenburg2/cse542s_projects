@@ -2,11 +2,10 @@
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // Lab1 main
 
-include!("declarations.rs"); // Include the declarations.rs file
-include!("script_gen.rs");  // Include the script_gen.rs file
-
 use std::env;
 use std::sync::atomic::Ordering;
+
+pub mod lab2;
 
 // TODO: document functions
 

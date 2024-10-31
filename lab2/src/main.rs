@@ -1,13 +1,11 @@
 // main.rs
-// Benjamin Kim, Alex Kloppenburg, Sam Yoo
-// Lab1 main
 
 pub mod lab2;
 
 use std::env;
 use std::sync::atomic::Ordering;
 use crate::lab2::play::Play;
-use crate::lab2::declarations::{DEBUG, CMD_LINE_ERR}; // Removed unused GEN_SCRIPT_ERR
+use crate::lab2::declarations::{DEBUG, CMD_LINE_ERR}; // Import only needed constants
 
 fn main() -> Result<(), u8> {
     // Declare two mutable variables for the configuration file name and the part files directory (if one is provided)
@@ -20,16 +18,14 @@ fn main() -> Result<(), u8> {
         return Err(err);  // Return error for bad command line arguments
     }
 
-    // Initialize play title and play structure
-    let mut play = Play::new(); // Updated to call Play::new() without arguments
-
-    // Generate the play script
+    // Create a new Play instance and prepare it using the config file
+    let mut play = Play::new();
     if let Err(err) = play.prepare(&config, &part_files_dir) {
         eprintln!("Error generating script!");
         return Err(err);  // Return error if script generation failed
     }
 
-    // Recite the play (assuming `recite` method in Play is implemented)
+    // Call recite to print the play
     play.recite();
 
     Ok(())

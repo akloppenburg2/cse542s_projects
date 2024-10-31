@@ -7,10 +7,10 @@ pub mod lab2;
 use std::env;
 use std::sync::atomic::Ordering;
 use crate::lab2::play::Play;
-use crate::lab2::declarations::{DEBUG, GEN_SCRIPT_ERR, CMD_LINE_ERR};
-use crate::lab2::script_gen::script_gen;
+use crate::lab2::declarations::{DEBUG, CMD_LINE_ERR}; // Removed unused GEN_SCRIPT_ERR
 
 fn main() -> Result<(), u8> {
+    // Declare two mutable variables for the configuration file name and the part files directory (if one is provided)
     let mut config = String::new();
     let mut part_files_dir = String::new();
 
@@ -21,20 +21,20 @@ fn main() -> Result<(), u8> {
     }
 
     // Initialize play title and play structure
-    let mut play_title = String::new();
-    let mut play = Play::new(&play_title); // Initialize using Play's constructor
+    let mut play = Play::new(); // Updated to call Play::new() without arguments
 
     // Generate the play script
-    if let Err(err) = script_gen(&config, &part_files_dir, &mut play_title, &mut play) {
+    if let Err(err) = play.prepare(&config, &part_files_dir) {
         eprintln!("Error generating script!");
         return Err(err);  // Return error if script generation failed
     }
 
-    // Display the play (assuming `display` method in `Play` is implemented)
-    recite(&play_title, &play);
+    // Recite the play (assuming `recite` method in Play is implemented)
+    play.recite();
 
     Ok(())
 }
+
 
 fn usage(name: &str) {
     println!("usage: {} <configuration_file> [part_files_dir] [whinge/nowhinge]", name);
@@ -76,31 +76,4 @@ fn parse_args(config: &mut String, part_files_dir: &mut String) -> Result<(), u8
     }
 
     Ok(())
-}
-
-// Updated `recite` function to match the current `Play` and `Scene` structure
-fn recite(title: &String, play: &Play) {
-    println!("{}", title);
-    let mut current_character: Option<String> = None;
-
-    // Loop through each scene in the play
-    for scene in &play.scenes {
-        for line in &scene.lines {
-            // Each line is expected to be in the format "line_num (character): text"
-            if let Some((_, rest)) = line.split_once(" (") {
-                if let Some((character, text)) = rest.split_once("): ") {
-                    let character = character.trim().to_string();
-                    let text = text.trim();
-
-                    // Print character name only if it changes
-                    if Some(character.clone()) != current_character {
-                        println!("\n{}:", character);
-                        current_character = Some(character.clone());
-                    }
-                    // Print the line text
-                    println!("{}", text);
-                }
-            }
-        }
-    }
 }

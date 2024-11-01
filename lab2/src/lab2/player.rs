@@ -1,94 +1,131 @@
 // player.rs
+// Benjamin Kim, Alex Kloppenburg, Sam Yoo
+// Defines PlayLines and Player structs
 
-use std::cmp::Ordering;
+use {
+    super::{
+        declarations::{DEBUG, GEN_SCRIPT_ERR},
+        script_gen::grab_trimmed_file_lines,
+    }
+};
 
+// Define the PlayLines struct which holds a vector of (line number, line text) tuples
 pub type PlayLines = Vec<(usize, String)>;
 
+// Define Player struct which holds Player name
+#[derive(Eq, PartialOrd)]
 pub struct Player {
-    pub name: String,           // Character's name, made public for access in other modules
-    lines: PlayLines,           // Lines for the character
-    index: usize,               // Index of the current line
+    pub name: String,
+    pub lines: PlayLines,
+    pub index: usize,
 }
 
+// Implmentation of Player
 impl Player {
-    pub fn new(name: &String) -> Player {
-        Player {
-            name: name.clone(),
+    pub fn new(name: &String) -> Self {
+        Self {
+            name: name.to_string(),
             lines: Vec::new(),
             index: 0,
         }
     }
 
-    // Public method to add a line to the player's lines
-    pub fn add_line(&mut self, line_num: usize, text: String) {
-        self.lines.push((line_num, text));
+    // The add_script_line function to process each line of the character's file
+    fn add_script_line(&mut self, line: &String) {
+        if !line.trim().is_empty() {
+            if let Some((line_num_str, rest_of_line)) = line.split_once(char::is_whitespace) {
+                let line_num_str = line_num_str.trim();
+                let rest_of_line = rest_of_line.trim();
+
+                if let Ok(line_num) = line_num_str.parse::<usize>() {
+                    self.lines.push((line_num, rest_of_line.to_string()));
+                } else {
+                    if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
+                        eprintln!("Warning: Invalid line number '{}' in line '{}'", line_num_str, line);
+                    }
+                }
+            }
+        }
     }
 
-    // Prepare method with unused `_file_name` parameter to suppress warnings
-    pub fn prepare(&mut self, _file_name: &String) -> Result<(), u8> {
-        // Add file handling code here if needed, or leave as is to suppress warnings
+    pub fn prepare(&mut self, part_name: &String) -> Result<(), u8> {    
+        // Vector to store lines
+        let mut lines = Vec::new();
+
+        // Call grab_trimmed_file_lines to read and trim lines from the file
+        if let Err(_) = grab_trimmed_file_lines(part_name, &mut lines) {
+            eprintln!("Error: Failed to process file for part '{}'", part_name);
+            return Err(GEN_SCRIPT_ERR);
+        }
+
+        // Add each line to the Play using add_script_line
+        for line in &lines {
+            self.add_script_line(line);
+        }
+        
+        self.lines.sort();
         Ok(())
+    }
+
+    pub fn speak(&mut self, char_name: &mut String) {
+        if self.index > self.lines.len() {
+            return;
+        }
+
+        if char_name != &self.name {
+            *char_name = self.name.clone();
+            println!("");
+            println!("{}", self.name);
+        }
+
+        println!("{:?}", self.lines[self.index]);
+        self.index += 1;
     }
 
     pub fn next_line(&self) -> Option<usize> {
         if self.index < self.lines.len() {
-            Some(self.lines[self.index].0)
-        } else {
-            None
+            return Some(self.lines[self.index].0);
         }
-    }
-
-    pub fn speak(&mut self, last_speaker: &mut String) {
-        if self.index >= self.lines.len() {
-            return;
-        }
-
-        if &self.name != last_speaker {
-            *last_speaker = self.name.clone();
-            println!();
-            println!("{}:", self.name);
-        }
-
-        println!("{}", self.lines[self.index].1);
-        self.index += 1;
+        None
     }
 }
 
-// Implement PartialEq and Eq for Player based on the specified criteria
 impl PartialEq for Player {
     fn eq(&self, other: &Self) -> bool {
-        // Both players are silent
-        if self.lines.is_empty() && other.lines.is_empty() {
+        // Both players are silent if they have no lines
+        if self.next_line().is_none() && other.next_line().is_none() {
             return true;
         }
-        // Both have lines and share the same first line number
-        if !self.lines.is_empty() && !other.lines.is_empty() {
-            return self.lines[0].0 == other.lines[0].0;
+        
+        // Both players have lines, check if the first line numbers are the same
+        if let (Some(self_line), Some(other_line)) = (self.next_line(), other.next_line()) {
+            return self_line == other_line;
         }
+        
         false
     }
 }
 
-impl Eq for Player {}
-
-// Implement PartialOrd and Ord for Player based on the specified criteria
-impl PartialOrd for Player {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
 impl Ord for Player {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match (self.lines.is_empty(), other.lines.is_empty()) {
-            // Both players are silent (equal)
-            (true, true) => Ordering::Equal,
-            // Self has no lines, so it’s less than the other player
-            (true, false) => Ordering::Less,
-            // Other player has no lines, so self is greater
-            (false, true) => Ordering::Greater,
-            // Both players have lines; compare based on the first line number
-            (false, false) => self.lines[0].0.cmp(&other.lines[0].0),
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // Case 1: Check if one player is silent and the other is not
+        if self.next_line().is_none() && other.next_line().is_some() {
+            return std::cmp::Ordering::Less; // self is less
         }
+
+        if self.next_line().is_some() && other.next_line().is_none() {
+            return std::cmp::Ordering::Greater; // self is greater
+        }
+
+        // Case 2: Both have lines, compare first line numbers
+        if let (Some(self_line), Some(other_line)) = (self.next_line(), other.next_line()) {
+            if self_line > other_line {
+                return std::cmp::Ordering::Less; // self is less
+            } else {
+                return std::cmp::Ordering::Greater; // self is greater
+            }
+        }
+
+        std::cmp::Ordering::Equal
     }
 }

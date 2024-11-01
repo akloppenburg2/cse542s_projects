@@ -1,11 +1,13 @@
 // player.rs
 
+use std::cmp::Ordering;
+
 pub type PlayLines = Vec<(usize, String)>;
 
 pub struct Player {
-    name: String,           // Character's name
-    lines: PlayLines,       // Lines for the character
-    index: usize,           // Index of the current line
+    pub name: String,           // Character's name, made public for access in other modules
+    lines: PlayLines,           // Lines for the character
+    index: usize,               // Index of the current line
 }
 
 impl Player {
@@ -49,5 +51,44 @@ impl Player {
 
         println!("{}", self.lines[self.index].1);
         self.index += 1;
+    }
+}
+
+// Implement PartialEq and Eq for Player based on the specified criteria
+impl PartialEq for Player {
+    fn eq(&self, other: &Self) -> bool {
+        // Both players are silent
+        if self.lines.is_empty() && other.lines.is_empty() {
+            return true;
+        }
+        // Both have lines and share the same first line number
+        if !self.lines.is_empty() && !other.lines.is_empty() {
+            return self.lines[0].0 == other.lines[0].0;
+        }
+        false
+    }
+}
+
+impl Eq for Player {}
+
+// Implement PartialOrd and Ord for Player based on the specified criteria
+impl PartialOrd for Player {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Player {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self.lines.is_empty(), other.lines.is_empty()) {
+            // Both players are silent (equal)
+            (true, true) => Ordering::Equal,
+            // Self has no lines, so it’s less than the other player
+            (true, false) => Ordering::Less,
+            // Other player has no lines, so self is greater
+            (false, true) => Ordering::Greater,
+            // Both players have lines; compare based on the first line number
+            (false, false) => self.lines[0].0.cmp(&other.lines[0].0),
+        }
     }
 }

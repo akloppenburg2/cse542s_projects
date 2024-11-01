@@ -4,3 +4,4 @@ pub mod play;
 pub mod player;
 pub mod add_script_line;
 pub mod return_wrapper;
+pub mod scene_fragment;

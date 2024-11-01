@@ -5,9 +5,10 @@ pub mod lab2;
 use std::env;
 use std::sync::atomic::Ordering;
 use crate::lab2::play::Play;
-use crate::lab2::declarations::{DEBUG, CMD_LINE_ERR}; // Import only needed constants
+use crate::lab2::declarations::{DEBUG, CMD_LINE_ERR};
+use crate::lab2::return_wrapper::ReturnWrapper; // Import ReturnWrapper
 
-fn main() -> Result<(), u8> {
+fn main() -> ReturnWrapper {
     // Declare two mutable variables for the configuration file name and the part files directory (if one is provided)
     let mut config = String::new();
     let mut part_files_dir = String::new();
@@ -15,20 +16,20 @@ fn main() -> Result<(), u8> {
     // Call parse_args and handle errors
     if let Err(err) = parse_args(&mut config, &mut part_files_dir) {
         eprintln!("Error parsing arguments!");
-        return Err(err);  // Return error for bad command line arguments
+        return ReturnWrapper::new(err);  // Wrap with ReturnWrapper for errors
     }
 
     // Create a new Play instance and prepare it using the config file
     let mut play = Play::new();
     if let Err(err) = play.prepare(&config, &part_files_dir) {
         eprintln!("Error generating script!");
-        return Err(err);  // Return error if script generation failed
+        return ReturnWrapper::new(err);  // Wrap with ReturnWrapper for errors
     }
 
     // Call recite to print the play
     play.recite();
 
-    Ok(())
+    ReturnWrapper::new(0) // Success wrapped with ReturnWrapper
 }
 
 

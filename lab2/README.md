@@ -32,3 +32,12 @@
 
 1. Description of Testing
     1. For testing, we used a few different types of config and character files.  First, we had a couple of well-formatted ones that we used for initial testing and to ensure proper formatting.  We also had two incorrect config files that we used to confirm our error/warning reporting - one with 3 tokens on each of the character lines, and one that contained a character with no config file.  We also used a character file that was completely empty to check that those were being parsed correctly.  The incorrect files were really good for figuring out where we had holes in our error reporting, or in some cases just figuring out where we had error output that wasn't specific enough.
+
+
+## Structs (Step 08)
+1. Description of Structs
+    1.We refactored the code to organize functionality into structs, primarily Play and Player. The Play struct manages the entire script, including loading configuration files and coordinating characters, while each Player struct handles the lines and actions of individual characters. This struct-based design improved modularity and made the code easier to manage. A key challenge was ensuring Play and Player interacted seamlessly to handle dialogue flow; we addressed this by using methods like prepare and speak within Player to keep each struct’s responsibilities clear and maintain data encapsulation.
+
+## Return Wrapper (step 10)
+1. Description of Return Wrapper
+    1.The ReturnWrapper struct was implemented to handle exit codes and error messages in a consistent way across the program. This struct wraps a single u8 code and implements the Termination trait, allowing us to manage exit codes directly in the main function. If the code is non-zero, ReturnWrapper outputs an error message to stderr and returns the exit code to the shell. In main.rs, we updated the return type to ReturnWrapper and wrapped each Ok and Err with ReturnWrapper::new. This approach simplified error handling and ensured that each stage of the program could report errors consistently to the operating system.

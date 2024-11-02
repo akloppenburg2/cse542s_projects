@@ -1,9 +1,9 @@
-# CSE 542S Lab 1
+# CSE 542S Lab 2
 
 ## General Information
 
 1. Lab Number
-    1. CSE 542S Fall 2024 Lab 1
+    1. CSE 542S Fall 2024 Lab 2
 
 2. Student Contact Information
     1. Sam Yoo, <yoosy950@gmail.com>

@@ -141,9 +141,10 @@ impl SceneFragment {
 
     pub fn enter(&self, other: &SceneFragment) {
         if !self.title.trim().is_empty() {
+            println!{""};
             println!("{}", self.title);
+            println!{""};
         }
-
         for player in &self.players {
             let mut contains = false;
             for other_player in &other.players {
@@ -162,13 +163,14 @@ impl SceneFragment {
         if !self.title.trim().is_empty() {
             println!("{}", self.title);
         }
-
+        println!{""};
         for player in &self.players {
             println!("[Enter {}.]", player.name);
         }
     }
 
     pub fn exit(&self, other: &SceneFragment) {
+        println!{""};
         for idx in 0..self.players.len() {
             let mut contains = (false, idx);
             for other_player in &other.players {
@@ -183,6 +185,7 @@ impl SceneFragment {
     }
 
     pub fn exit_all(&self) {
+        println!{""};
         for idx in 0..self.players.len() {
             println!("[Exit {}.]", &self.players[self.players.len()-1-idx].name);
         }

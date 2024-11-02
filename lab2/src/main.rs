@@ -8,18 +8,18 @@ use crate::lab2::play::Play;
 use crate::lab2::declarations::{DEBUG, CMD_LINE_ERR}; // Import only needed constants
 
 fn main() -> Result<(), u8> {
-    // Declare a mutable variable for the configuration file name
-    let mut config = String::new();
+    // Declare a mutable variable for the script file name
+    let mut script_file = String::new();
 
     // Call parse_args and handle errors
-    if let Err(err) = parse_args(&mut config) {
+    if let Err(err) = parse_args(&mut script_file) {
         eprintln!("Error parsing arguments!");
         return Err(err);  // Return error for bad command line arguments
     }
 
-    // Create a new Play instance and prepare it using the config file
+    // Create a new Play instance and prepare it using the script file
     let mut play = Play::new();
-    if let Err(err) = play.prepare(&config) {
+    if let Err(err) = play.prepare(&script_file) {
         eprintln!("Error generating script!");
         return Err(err);  // Return error if script generation failed
     }
@@ -32,10 +32,10 @@ fn main() -> Result<(), u8> {
 
 
 fn usage(name: &str) {
-    println!("usage: {} <configuration_file> [whinge/nowhinge]", name);
+    println!("usage: {} <script_file_name> [whinge/nowhinge]", name);
 }
 
-fn parse_args(config: &mut String) -> Result<(), u8> {
+fn parse_args(script_file: &mut String) -> Result<(), u8> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 || args.len() > 3 {
@@ -43,8 +43,8 @@ fn parse_args(config: &mut String) -> Result<(), u8> {
         return Err(CMD_LINE_ERR);
     }
 
-    // Set the config file name
-    *config = args[1].clone();
+    // Set the script file name
+    *script_file = args[1].clone();
 
     // Set debug flag based on "whinge" or "nowhinge"
     if args.contains(&"whinge".to_string()) {

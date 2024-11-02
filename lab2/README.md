@@ -41,3 +41,8 @@
 ## Return Wrapper (step 10)
 1. Description of Return Wrapper
     1.The ReturnWrapper struct was implemented to handle exit codes and error messages in a consistent way across the program. This struct wraps a single u8 code and implements the Termination trait, allowing us to manage exit codes directly in the main function. If the code is non-zero, ReturnWrapper outputs an error message to stderr and returns the exit code to the shell. In main.rs, we updated the return type to ReturnWrapper and wrapped each Ok and Err with ReturnWrapper::new. This approach simplified error handling and ensured that each stage of the program could report errors consistently to the operating system.
+
+## Scene Fragments (step 15)
+1. Description of Scene Fragments
+    1. To manage multiple consecutive scene fragments, we designed a SceneFragment struct to represent each part of a play, holding details like scene title, characters, and their lines. The Play struct manages these fragments sequentially, enabling smooth transitions between scenes. Key methods like enter, exit, and recite allow characters to be introduced or removed based on the current and adjacent scenes. Handling Rust’s borrowing rules presented challenges, especially when accessing multiple scene fragments simultaneously. We addressed this by using Rust’s split_at_mut function to create non-overlapping references, allowing flexible yet safe access to mutable data. Additionally, detailed error handling with debug messages was incorporated to manage missing or malformed data files, ensuring robustness. This design effectively organizes and presents each scene in sequence, creating a cohesive, dynamic play structure.
+

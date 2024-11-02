@@ -1,0 +1,2 @@
+Polonius ./src/tests/hamlet/Polonius_hamlet_ii_1b.txt
+Ophelia ./src/tests/hamlet/Ophelia_hamlet_ii_1b.txt

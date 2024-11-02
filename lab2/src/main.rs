@@ -1,56 +1,73 @@
 // main.rs
+// Benjamin Kim, Alex Kloppenburg, Sam Yoo
+// Lab1 main
 
-pub mod lab2;
+use {
+    crate::lab2::{
+        declarations::DEBUG, 
+        play::Play,
+        return_wrapper::ReturnWrapper,
+    },
+    std::{
+        env, 
+        sync::atomic::Ordering
+    },
+};
 
-use std::env;
-use std::sync::atomic::Ordering;
-use crate::lab2::play::Play;
-use crate::lab2::declarations::{DEBUG, CMD_LINE_ERR}; // Import only needed constants
+pub mod lab2; // declare lab2 module
 
-fn main() -> Result<(), u8> {
-    // Declare a mutable variable for the script file name
-    let mut script_file = String::new();
+// Command line argument constants
+const MAX_ARGS: usize = 3;
+const MIN_ARGS: usize = 2;
+const PROGRAM_NAME: usize = 0;
+const CONFIG_FILE: usize = 1;
+const OPT: usize = 2;
+
+const CMD_LINE_ERR: u8 = 1; // Error for command line argument issues
+
+fn main() -> ReturnWrapper {
+    // Declare a mutable variable for the configuration file name
+    let mut config = String::new();
 
     // Call parse_args and handle errors
-    if let Err(err) = parse_args(&mut script_file) {
+    if let Err(e) = parse_args(&mut config) {
         eprintln!("Error parsing arguments!");
-        return Err(err);  // Return error for bad command line arguments
+        return ReturnWrapper::new(Err(e));  // Return error for bad command line arguments
     }
-
-    // Create a new Play instance and prepare it using the script file
+    
     let mut play = Play::new();
-    if let Err(err) = play.prepare(&script_file) {
-        eprintln!("Error generating script!");
-        return Err(err);  // Return error if script generation failed
+    if let Err(e) = play.prepare(&config) {
+        return ReturnWrapper::new(Err(e));
+    } else {
+        play.recite();
     }
 
-    // Call recite to print the play
-    play.recite();
-
-    Ok(())
+    // Indicate successful completion
+    ReturnWrapper::new(Ok(()))
 }
-
 
 fn usage(name: &str) {
-    println!("usage: {} <script_file_name> [whinge/nowhinge]", name);
+    println!("usage: {} <script_file_name> [whinge]", name);
 }
 
-fn parse_args(script_file: &mut String) -> Result<(), u8> {
-    let args: Vec<String> = env::args().collect();
+fn parse_args(config: &mut String) -> Result<(), u8> {
+    let mut args = Vec::new();
 
-    if args.len() < 2 || args.len() > 3 {
-        usage(&args[0]);
-        return Err(CMD_LINE_ERR);
+    for arg in env::args() {
+        args.push(arg);
     }
 
-    // Set the script file name
-    *script_file = args[1].clone();
+    if args.len() < MIN_ARGS || args.len() > MAX_ARGS || (args.len() == MAX_ARGS && args[OPT] != "whinge") {
+        usage(&args[PROGRAM_NAME]);
+        return Err(CMD_LINE_ERR); // CMD_LINE_ERR should be defined in declarations.rs
+    }
 
-    // Set debug flag based on "whinge" or "nowhinge"
-    if args.contains(&"whinge".to_string()) {
+    // Set the config file name
+    *config = args[CONFIG_FILE].clone();
+
+    // Check if the third argument is "whinge"
+    if args.len() == MAX_ARGS && args[OPT] == "whinge" {
         DEBUG.store(true, Ordering::SeqCst); // DEBUG should be an AtomicBool defined in declarations.rs
-    } else {
-        DEBUG.store(false, Ordering::SeqCst);
     }
 
     Ok(())

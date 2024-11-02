@@ -1,0 +1,4 @@
+Guildenstern ./src/tests/hamlet/Guildenstern_hamlet_ii_2a.txt
+King ./src/tests/hamlet/King_hamlet_ii_2a.txt
+Queen ./src/tests/hamlet/Queen_hamlet_ii_2a.txt
+Rosencrantz ./src/tests/hamlet/Rosencrantz_hamlet_ii_2a.txt

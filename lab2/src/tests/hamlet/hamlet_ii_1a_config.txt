@@ -1,0 +1,2 @@
+Polonius ./src/tests/hamlet/Polonius_hamlet_ii_1a.txt
+Reynaldo ./src/tests/hamlet/Reynaldo_hamlet_ii_1a.txt

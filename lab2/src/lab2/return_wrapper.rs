@@ -2,9 +2,7 @@
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // 
 
-use {
-    std::process::{Termination, ExitCode}
-};
+use std::process::{Termination, ExitCode};
 
 pub struct ReturnWrapper(u8);
 

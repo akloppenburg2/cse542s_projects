@@ -34,7 +34,7 @@ fn main() -> ReturnWrapper {
         eprintln!("Error parsing arguments!");
         return ReturnWrapper::new(Err(e));  // Return error for bad command line arguments
     }
-
+    
     let mut play = Play::new();
     if let Err(e) = play.prepare(&config) {
         return ReturnWrapper::new(Err(e));

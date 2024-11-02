@@ -2,21 +2,18 @@
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // 
 
-use {
-    super::{
-        declarations::{DEBUG, GEN_SCRIPT_ERR},
-        player::Player,
-        script_gen::grab_trimmed_file_lines,
-    }
+use super::{
+    declarations::{DEBUG, GEN_SCRIPT_ERR},
+    player::Player,
+    script_gen::grab_trimmed_file_lines,
 };
 
 // Define PlayConfig as a vector of (character name, file name) tuples
 pub type PlayConfig = Vec<(String, String)>;
 
 // Script generation constants
-const TITLE_INDEX: usize = 0;
-const CHAR_TOKEN_INDEX: usize = 0;
-const FILE_TOKEN_INDEX: usize = 1;
+const LINE_NUM_TOKEN_INDEX: usize = 0;
+const LINE_TOKEN_INDEX: usize = 1;
 const NUM_TOKENS: usize = 2;
 
 // SceneFragment struct declaration
@@ -56,7 +53,7 @@ impl SceneFragment {
         let tokens: Vec<&str> = line.split_whitespace().collect();
     
         if tokens.len() >= NUM_TOKENS {
-            play_config.push((tokens[CHAR_TOKEN_INDEX].to_string(), tokens[FILE_TOKEN_INDEX].to_string()));
+            play_config.push((tokens[LINE_NUM_TOKEN_INDEX].to_string(), tokens[LINE_TOKEN_INDEX..].join(" ")));
         }
         else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
             eprintln!("Warning: Badly formed line in config: {}", line);
@@ -66,15 +63,12 @@ impl SceneFragment {
     pub fn read_config(config_file: &String, play_title: &mut String, play_config: &mut PlayConfig) -> Result<(), u8> {
         // Vector for lines
         let mut lines = Vec::new();
-    
+        
         // Call grab_trimmed_file_lines to read and trim lines from the file
         if let Err(_) = grab_trimmed_file_lines(config_file, &mut lines) {
             eprintln!("Error: Failed to process file: '{}'", config_file);
             return Err(GEN_SCRIPT_ERR);
         }
-    
-        // Set title to first element
-        *play_title = lines.remove(TITLE_INDEX);
     
         // Add remaining elements to config
         for line in lines
@@ -85,9 +79,8 @@ impl SceneFragment {
         Ok(())
     }
 
-    // Main script generation function
+    // 
     pub fn prepare(&mut self, config_file: &String) -> Result<(), u8> {
-        
         // Initialize and then read config
         let mut play_config = PlayConfig::new(); 
         if let Err(_) = Self::read_config(config_file, &mut self.title, &mut play_config){
@@ -102,11 +95,6 @@ impl SceneFragment {
 
         self.players.sort();
         Ok(())
-    }
-
-    // Method to get the title of the SceneFragment
-    pub fn title(&self) -> &String {
-        &self.title
     }
 
     pub fn recite(&mut self) {

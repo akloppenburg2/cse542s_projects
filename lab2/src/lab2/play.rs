@@ -2,12 +2,10 @@
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // Defines PlayLines and Player structs
 
-use {
-    super::{
-        scene_fragment::SceneFragment,
-        declarations::{DEBUG, GEN_SCRIPT_ERR},
-        script_gen::grab_trimmed_file_lines,
-    }
+use super::{
+    scene_fragment::SceneFragment,
+    declarations::{DEBUG, GEN_SCRIPT_ERR},
+    script_gen::grab_trimmed_file_lines,
 };
 
 // Define 
@@ -17,6 +15,7 @@ pub type Fragments = Vec<SceneFragment>;
 
 // Script generation constants
 const CHAR_TOKEN_INDEX: usize = 0;
+const CONFIG_TOKEN_INDEX: usize = 0;
 const NUM_TOKENS: usize = 2;
 
 // Play struct declaration
@@ -36,7 +35,7 @@ impl Play {
     // Function to process the ScriptConfig and generate the Play script
     pub fn process_config(&mut self, play_config: &ScriptConfig) -> Result<(), u8> {
 
-        // Iterate through each tuple in ScriptConfig (character name, file name)
+        // Iterate through each tuple in ScriptConfig (bool, file name/title)
         for config in play_config {
             match config {
                 (is_new, new_title) => {
@@ -76,7 +75,7 @@ impl Play {
             play_config.push((true, tokens.join(" ")));
         }
         else {
-            play_config.push((false, tokens[CHAR_TOKEN_INDEX].to_string()));
+            play_config.push((false, tokens[CONFIG_TOKEN_INDEX].to_string()));
             if DEBUG.load(std::sync::atomic::Ordering::SeqCst) && tokens.len() >= NUM_TOKENS {
                 eprintln!("Warning: additional tokens in the line");
             }
@@ -86,7 +85,7 @@ impl Play {
     pub fn read_config(file: &String, play_config: &mut ScriptConfig) -> Result<(), u8> {
         // Vector for lines
         let mut lines = Vec::new();
-    
+
         // Call grab_trimmed_file_lines to read and trim lines from the file
         if let Err(_) = grab_trimmed_file_lines(file, &mut lines) {
             eprintln!("Error: Failed to process file: '{}'", file);
@@ -96,7 +95,7 @@ impl Play {
         if lines.is_empty() {
             eprintln!("Error: No lines in file: '{}'", file);
         }
-    
+
         // Add remaining elements to config
         for line in lines
         {

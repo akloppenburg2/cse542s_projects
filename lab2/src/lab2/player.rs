@@ -2,11 +2,9 @@
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // Defines PlayLines and Player structs
 
-use {
-    super::{
-        declarations::{DEBUG, GEN_SCRIPT_ERR},
-        script_gen::grab_trimmed_file_lines,
-    }
+use super::{
+    declarations::{DEBUG, GEN_SCRIPT_ERR},
+    script_gen::grab_trimmed_file_lines,
 };
 
 // Define the PlayLines struct which holds a vector of (line number, line text) tuples

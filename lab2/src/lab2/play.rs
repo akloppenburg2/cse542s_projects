@@ -133,13 +133,15 @@ impl Play {
 
         for idx in 0..self.players.len() {
             if idx == 0 {
-                self.players[0].enter_all();
+                self.players[idx].enter_all();
             } else {
                 self.players[idx].enter(&self.players[idx-1])
             }
+
             self.players[idx].recite();
+
             if idx == self.players.len() - 1 {
-                self.players[self.players.len() - 1].exit_all();
+                self.players[idx].exit_all();
             } else {
                 self.players[idx].exit(&self.players[idx+1]);
             }

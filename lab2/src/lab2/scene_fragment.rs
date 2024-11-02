@@ -99,7 +99,7 @@ impl SceneFragment {
 
     pub fn recite(&mut self) {
         let mut last_speaker = String::new();
-        let mut expected_line_num = 1;
+        let mut expected_line_num = 0;
 
         loop {
             let mut next_line_num = None;
@@ -145,7 +145,14 @@ impl SceneFragment {
         }
 
         for player in &self.players {
-            if !other.players.contains(player) {
+            let mut contains = false;
+            for other_player in &other.players {
+                if other_player.name == player.name {
+                    contains = true;
+                }
+            }
+
+            if !contains {
                 println!("[Enter {}.]", player.name);
             }
         }
@@ -162,17 +169,22 @@ impl SceneFragment {
     }
 
     pub fn exit(&self, other: &SceneFragment) {
-
-        for idx in self.players.len()..0 {
-            if !other.players.contains(&self.players[idx - 1]) {
-                println!("[Exit {}.]", &self.players[idx - 1].name);
+        for idx in 0..self.players.len() {
+            let mut contains = (false, idx);
+            for other_player in &other.players {
+                if other_player.name == (&self.players[self.players.len()-1-idx]).name {
+                    contains = (true, 0);
+                }
+            }
+            if !contains.0 {
+                println!("[Exit {}.]", &self.players[self.players.len()-1-contains.1].name);
             }
         }
     }
 
     pub fn exit_all(&self) {
-        for idx in self.players.len()..0 {
-            println!("[Exit {}.]", &self.players[idx - 1].name);
+        for idx in 0..self.players.len() {
+            println!("[Exit {}.]", &self.players[self.players.len()-1-idx].name);
         }
     }
 }

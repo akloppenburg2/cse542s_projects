@@ -99,7 +99,7 @@ impl SceneFragment {
 
     pub fn recite(&mut self) {
         let mut last_speaker = String::new();
-        let mut expected_line_num = 0;
+        let mut expected_line_num = 1;
 
         loop {
             let mut next_line_num = None;

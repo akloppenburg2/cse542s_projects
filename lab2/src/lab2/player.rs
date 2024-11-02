@@ -73,10 +73,11 @@ impl Player {
         if char_name != &self.name {
             *char_name = self.name.clone();
             println!("");
-            println!("{}", self.name);
+            println!("{}.", self.name);
         }
 
-        println!("{:?}", self.lines[self.index]);
+        // index 1 in the PlayLines struct's vector is the string containing the line itself
+        println!("{}", self.lines[self.index].1);
         self.index += 1;
     }
 

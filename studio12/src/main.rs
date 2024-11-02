@@ -1,20 +1,38 @@
-#[derive(Debug)]
-struct StringStruct
+use std::fmt::Debug;
+
+#[derive(Debug, Default)] 
+struct MyStruct<T> where T: Debug + Clone
 {
-    string: String,
+    one: T,
+    two: T,
 }
 
-impl StringStruct
+impl<T> MyStruct<T> where T: Debug + Clone
 {
-    fn new(string: &String) -> StringStruct
+    fn new(one: &T, two: &T) -> MyStruct<T>
     {
-        StringStruct{string: string.to_string()}
+        MyStruct{one: one.clone(), two: two.clone()}
     }
 }
 
+//#[cfg(oldexercise)]
+impl<T> Drop for MyStruct<T> where T: Debug + Clone
+{
+    fn drop(&mut self)
+    {
+        println!("{:?} is being dropped!", self)
+    }
+}
+
+
+
 fn main()
 {
-    let first  = StringStruct::new(&"first".to_string());
-    let second = StringStruct::new(&"second".to_string());
-    println!("{:?}, {:?}", first, second);
+    let strings  = MyStruct::new(&"first".to_string(), &"second".to_string());
+    let ints = MyStruct::new(&(15 as u16), &(30 as u16));
+    println!("{:?}, {:?}", strings, ints);
+
+    let default_strings  = MyStruct::new(&Default::default(), &"another string".to_string());
+    let default_ints = MyStruct::new(&Default::default(), &(79 as u16));
+    println!("{:?}, {:?}", default_strings, default_ints);
 }

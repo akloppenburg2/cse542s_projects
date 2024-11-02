@@ -1,22 +1,18 @@
-// scene_fragment.rs
-
 use crate::lab2::player::Player;
-use crate::lab2::script_gen::grab_trimmed_file_lines;
 use crate::DEBUG;
-use crate::lab2::declarations::GEN_SCRIPT_ERR;
 use std::collections::HashSet;
-
-pub type PlayConfig = Vec<(String, String)>;
 
 pub struct SceneFragment {
     title: String,
+    text: String,
     players: Vec<Player>,
 }
 
 impl SceneFragment {
-    pub fn new(title: &String) -> SceneFragment {
+    pub fn new(title: &String, text: &String) -> SceneFragment {
         SceneFragment {
             title: title.clone(),
+            text: text.clone(),
             players: Vec::new(),
         }
     }
@@ -26,11 +22,15 @@ impl SceneFragment {
         self.players.push(player);
     }
 
-    pub fn prepare(&mut self, config_file: &String, part_files_dir: &String) -> Result<(), u8> {
-        let play_config = self.read_config(config_file, part_files_dir)?;
-        self.process_config(&play_config)?;
-        self.players.sort(); // Sort players by their first line for proper order
+    // Updates the fragment's text; expects `text` argument as `&String`
+    pub fn prepare(&mut self, text: &String) -> Result<(), u8> {
+        self.text = text.clone();
         Ok(())
+    }
+
+    // Method to get the title of the SceneFragment
+    pub fn title(&self) -> &String {
+        &self.title
     }
 
     pub fn recite(&mut self) {
@@ -101,43 +101,6 @@ impl SceneFragment {
     pub fn exit_all(&self) {
         for player in self.players.iter().rev() {
             println!("[Exit {}.]", player.name);
-        }
-    }
-
-    fn read_config(&mut self, config_file: &String, part_files_dir: &String) -> Result<PlayConfig, u8> {
-        let mut lines = Vec::new();
-        if grab_trimmed_file_lines(config_file, &mut lines).is_err() {
-            eprintln!("Error: Failed to process file: '{}'", config_file);
-            return Err(GEN_SCRIPT_ERR);
-        }
-
-        self.title = lines.remove(0);
-        let mut play_config = PlayConfig::new();
-
-        for line in lines {
-            self.add_config(&line, &mut play_config, part_files_dir.to_string());
-        }
-        Ok(play_config)
-    }
-
-    fn process_config(&mut self, play_config: &PlayConfig) -> Result<(), u8> {
-        for (character_name, file_name) in play_config {
-            let mut player = Player::new(character_name);
-            if player.prepare(file_name).is_err() {
-                eprintln!("Error preparing player {}", character_name);
-                return Err(GEN_SCRIPT_ERR);
-            }
-            self.add_player(player);
-        }
-        Ok(())
-    }
-
-    fn add_config(&self, line: &String, play_config: &mut PlayConfig, part_files_dir: String) {
-        let tokens: Vec<&str> = line.split_whitespace().collect();
-        if tokens.len() == 2 {
-            play_config.push((tokens[0].to_string(), part_files_dir + tokens[1]));
-        } else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
-            eprintln!("Warning: Badly formed line in config: {}", line);
         }
     }
 }

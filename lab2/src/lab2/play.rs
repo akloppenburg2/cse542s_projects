@@ -1,102 +1,118 @@
-use crate::lab2::player::Player;
-use crate::lab2::script_gen::grab_trimmed_file_lines; // Import grab_trimmed_file_lines
+use crate::lab2::scene_fragment::SceneFragment;
+use crate::lab2::script_gen::grab_trimmed_file_lines;
 use crate::DEBUG;
 use crate::lab2::declarations::GEN_SCRIPT_ERR;
 
-pub type PlayConfig = Vec<(String, String)>;
+pub type ScriptConfig = Vec<(bool, String)>;
+pub type Fragments = Vec<SceneFragment>;
 
 pub struct Play {
-    title: String,
-    players: Vec<Player>, // Keep players private
+    fragments: Fragments,
 }
 
 impl Play {
     pub fn new() -> Play {
         Play {
-            title: String::new(),
-            players: Vec::new(),
+            fragments: Vec::new(),
         }
     }
 
-    // Public method to add a player to the play
-    pub fn add_player(&mut self, player: Player) {
-        self.players.push(player);
+    pub fn add_fragment(&mut self, fragment: SceneFragment) {
+        self.fragments.push(fragment);
     }
 
-    fn add_config(&self, line: &String, play_config: &mut PlayConfig, part_files_dir: String) {
+    fn add_config(&self, line: &String, script_config: &mut ScriptConfig, part_files_dir: String) {
         let tokens: Vec<&str> = line.split_whitespace().collect();
-        if tokens.len() == 2 {
-            play_config.push((tokens[0].to_string(), part_files_dir + tokens[1]));
-        } else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
-            eprintln!("Warning: Badly formed line in config: {}", line);
+        
+        if tokens.is_empty() {
+            return;
+        }
+
+        if tokens[0] == "[scene]" {
+            if tokens.len() == 1 {
+                if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
+                    eprintln!("Warning: Missing scene title after [scene]");
+                }
+            } else {
+                let title = tokens[1..].join(" ");
+                script_config.push((true, title));
+            }
+        } else {
+            script_config.push((false, part_files_dir.clone() + tokens[0]));
+            if tokens.len() > 1 && DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
+                eprintln!("Warning: Extra tokens after file name in config: {}", line);
+            }
         }
     }
 
-    pub fn read_config(&mut self, config_file: &String, part_files_dir: &String) -> Result<PlayConfig, u8> {
+    pub fn read_config(&self, config_file: &String, script_config: &mut ScriptConfig) -> Result<(), u8> {
         let mut lines = Vec::new();
         if grab_trimmed_file_lines(config_file, &mut lines).is_err() {
             eprintln!("Error: Failed to process file: '{}'", config_file);
             return Err(GEN_SCRIPT_ERR);
         }
 
-        self.title = lines.remove(0);
-        let mut play_config = PlayConfig::new();
+        if lines.is_empty() {
+            eprintln!("Error: Script file '{}' is empty.", config_file);
+            return Err(GEN_SCRIPT_ERR);
+        }
 
         for line in lines {
-            self.add_config(&line, &mut play_config, part_files_dir.to_string());
-        }
-        Ok(play_config)
-    }
-
-    pub fn process_config(&mut self, play_config: &PlayConfig) -> Result<(), u8> {
-        for (character_name, file_name) in play_config {
-            let mut player = Player::new(character_name);
-            if player.prepare(file_name).is_err() {
-                eprintln!("Error preparing player {}", character_name);
-                return Err(GEN_SCRIPT_ERR);
-            }
-            self.add_player(player);
+            self.add_config(&line, script_config, String::new());
         }
         Ok(())
     }
 
-    pub fn prepare(&mut self, config_file: &String, part_files_dir: &String) -> Result<(), u8> {
-        let play_config = self.read_config(config_file, part_files_dir)?;
-        self.process_config(&play_config)
+    pub fn process_config(&mut self, script_config: &ScriptConfig) -> Result<(), u8> {
+        let mut title = String::new();
+
+        for (is_new_scene, text) in script_config {
+            if *is_new_scene {
+                title = text.clone();
+            } else {
+                let mut fragment = SceneFragment::new(&title, &text);
+                title.clear();
+                
+                if fragment.prepare(&text).is_err() {
+                    eprintln!("Error: Failed to prepare fragment with '{}'", text);
+                    return Err(GEN_SCRIPT_ERR);
+                }
+                
+                self.add_fragment(fragment);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn prepare(&mut self, config_file: &String) -> Result<(), u8> {
+        let mut script_config = ScriptConfig::new();
+        self.read_config(config_file, &mut script_config)?;
+        self.process_config(&script_config)?;
+
+        if !self.fragments.is_empty() && !self.fragments[0].title().is_empty() {
+            Ok(())
+        } else {
+            eprintln!("Error: No fragments with a title in the script.");
+            Err(GEN_SCRIPT_ERR)
+        }
     }
 
     pub fn recite(&mut self) {
-        println!("{}", self.title);
-        let mut last_speaker = String::new();
-        let mut expected_line_num = 0;
-
-        loop {
-            let mut next_line_num = None;
-
-            // Determine the next line to speak from all players
-            for player in &self.players {
-                if let Some(line_num) = player.next_line() {
-                    if next_line_num.is_none() || line_num < next_line_num.unwrap() {
-                        next_line_num = Some(line_num);
-                    }
-                }
+        for i in 0..self.fragments.len() {
+            if i == 0 {
+                self.fragments[i].enter_all();
+            } else {
+                let previous_fragment = &self.fragments[i - 1];
+                self.fragments[i].enter(previous_fragment);
             }
 
-            if next_line_num.is_none() {
-                break;
-            }
+            self.fragments[i].recite();
 
-            let next_line_num = next_line_num.unwrap();
-
-            if DEBUG.load(std::sync::atomic::Ordering::SeqCst) && next_line_num > expected_line_num {
-                eprintln!("Warning: Missing line {}", expected_line_num);
-            }
-            expected_line_num = next_line_num + 1;
-
-            for player in &mut self.players {
-                if player.next_line() == Some(next_line_num) {
-                    player.speak(&mut last_speaker);
-                }
+            if i == self.fragments.len() - 1 {
+                self.fragments[i].exit_all();
+            } else {
+                let next_fragment = &self.fragments[i + 1];
+                self.fragments[i].exit(next_fragment);
             }
         }
     }

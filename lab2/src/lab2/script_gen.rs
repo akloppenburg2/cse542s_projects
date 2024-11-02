@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
-use crate::lab2::play::{Play, PlayConfig}; // Updated imports
-use crate::lab2::player::Player; // Import Player
+use crate::lab2::play::{Play, ScriptConfig}; // Updated to use ScriptConfig
+use crate::lab2::scene_fragment::SceneFragment;
 use crate::DEBUG;
 use crate::lab2::declarations::GEN_SCRIPT_ERR;
 
@@ -30,56 +30,68 @@ pub fn grab_trimmed_file_lines(file_name: &String, lines: &mut Vec<String>) -> R
     Ok(())
 }
 
-// Function to process the PlayConfig and generate the Play script
-pub fn process_config(play: &mut Play, play_config: &PlayConfig) -> Result<(), u8> {
-    for (character_name, file_name) in play_config {
-        let mut player = Player::new(character_name); // Create a new player for each character
-        if player.prepare(file_name).is_err() {
-            eprintln!("Error: Failed to prepare player '{}'", character_name);
-            return Err(GEN_SCRIPT_ERR);
+// Function to process the ScriptConfig and generate the Play script
+pub fn process_config(play: &mut Play, script_config: &ScriptConfig) -> Result<(), u8> {
+    let mut title = String::new();
+
+    for (is_new_scene, text) in script_config {
+        if *is_new_scene {
+            title = text.clone();
+        } else {
+            let mut fragment = SceneFragment::new(&title, &text); // Updated to pass both title and text
+            title.clear();
+            
+            // Updated prepare call with the correct single argument
+            if fragment.prepare(&text).is_err() {
+                eprintln!("Error: Failed to prepare fragment with '{}'", text);
+                return Err(GEN_SCRIPT_ERR);
+            }
+            
+            play.add_fragment(fragment); // Ensure Play struct has add_fragment method
         }
-        play.add_player(player); // Add player to the play using add_player method
     }
     Ok(())
 }
 
 // Add a config entry
-pub fn add_config(line: &String, play_config: &mut PlayConfig, part_files_dir: String) {
+pub fn add_config(line: &String, script_config: &mut ScriptConfig, part_files_dir: String) {
     let tokens: Vec<&str> = line.split_whitespace().collect();
-    if tokens.len() == 2 {
-        play_config.push((tokens[0].to_string(), part_files_dir + tokens[1]));
-    } else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
-        eprintln!("Warning: Badly formed line in config: {}", line);
+    if tokens.is_empty() {
+        return;  // Ignore blank lines
+    }
+
+    if tokens[0] == "[scene]" {
+        if tokens.len() == 1 {
+            if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
+                eprintln!("Warning: Missing scene title after [scene]");
+            }
+        } else {
+            let title = tokens[1..].join(" ");
+            script_config.push((true, title));
+        }
+    } else {
+        script_config.push((false, part_files_dir.clone() + tokens[0]));
+        if tokens.len() > 1 && DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
+            eprintln!("Warning: Extra tokens after file name in config: {}", line);
+        }
     }
 }
 
 // Read configuration from a file
-pub fn read_config(config_file: &String, part_files_dir: &String, play_title: &mut String, play_config: &mut PlayConfig) -> Result<(), u8> {
+pub fn read_config(config_file: &String, script_config: &mut ScriptConfig) -> Result<(), u8> {
     let mut lines = Vec::new();
     if grab_trimmed_file_lines(config_file, &mut lines).is_err() {
         eprintln!("Error: Failed to process file: '{}'", config_file);
         return Err(GEN_SCRIPT_ERR);
     }
 
-    *play_title = lines.remove(0);
+    if lines.is_empty() {
+        eprintln!("Error: Script file '{}' is empty.", config_file);
+        return Err(GEN_SCRIPT_ERR);
+    }
 
     for line in lines {
-        add_config(&line, play_config, part_files_dir.to_string());
-    }
-    Ok(())
-}
-
-// Main script generation function
-pub fn script_gen(config_file: &String, part_files_dir: &String, play_title: &mut String, play: &mut Play) -> Result<(), u8> {
-    let mut play_config = PlayConfig::new();
-    if read_config(config_file, part_files_dir, play_title, &mut play_config).is_err() {
-        eprintln!("Error: Failed to read config '{}'", config_file);
-        return Err(GEN_SCRIPT_ERR);
-    }
-
-    if process_config(play, &play_config).is_err() {
-        eprintln!("Error: Failed to process config '{}'", config_file);
-        return Err(GEN_SCRIPT_ERR);
+        add_config(&line, script_config, String::new());
     }
     Ok(())
 }

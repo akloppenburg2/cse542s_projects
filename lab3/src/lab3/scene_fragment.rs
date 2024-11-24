@@ -71,7 +71,7 @@ impl SceneFragment {
         }
     }
     
-    pub fn read_config(config_file: &String, play_title: &mut String, play_config: &mut PlayConfig) -> Result<(), u8> {
+    pub fn read_config(config_file: &String, play_config: &mut PlayConfig) -> Result<(), u8> {
         // Vector for lines
         let mut lines = Vec::new();
 
@@ -104,7 +104,7 @@ impl SceneFragment {
     pub fn prepare(&mut self, config_file: &String) -> Result<(), u8> {
         // Initialize and then read config
         let mut play_config = PlayConfig::new();
-        if let Err(_) = Self::read_config(config_file, &mut self.title, &mut play_config){
+        if let Err(_) = Self::read_config(config_file, &mut play_config){
             eprintln!("Error: Failed to read config '{}'", config_file);
             return Err(GEN_SCRIPT_ERR);
         }

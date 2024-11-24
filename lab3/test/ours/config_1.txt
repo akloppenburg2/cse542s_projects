@@ -1,0 +1,5 @@
+   TITLE OF THE PLAY HERE!!!  
+ CHAR1 char_1.txt
+ CHAR2 char_2.txt
+    CHAR3 char_3.txt
+    

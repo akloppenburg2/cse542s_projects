@@ -3,7 +3,7 @@
 // Defines PlayLines and Player structs
 
 use super::{
-    declarations::{DEBUG, GEN_SCRIPT_ERR},
+    declarations::{DEBUG, GEN_SCRIPT_ERR, INITIAL_INDEX},
     script_gen::grab_trimmed_file_lines,
 };
 
@@ -24,7 +24,7 @@ impl Player {
         Self {
             name: name.to_string(),
             lines: Vec::new(),
-            index: 0,
+            index: INITIAL_INDEX,
         }
     }
 

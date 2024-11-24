@@ -1,5 +1,5 @@
 use {
-    super::declarations::GEN_SCRIPT_ERR,
+    super::declarations::{GEN_SCRIPT_ERR, OK_RESULT},
     std::fs::File,
     std::io::{BufReader, BufRead},
 };
@@ -24,7 +24,7 @@ pub fn grab_trimmed_file_lines(file_name: &String, lines: &mut Vec<String>) -> R
         line.clear();  // Clear the buffer before reading the next line
 
         match reader.read_line(&mut line) {
-            Ok(0) => return Ok(()),  // End of file reached, return success
+            Ok(OK_RESULT) => return Ok(()),  // End of file reached, return success
             Ok(_) => {
                 // Trim the line and push it into the vector if it's not empty
                 let trimmed_line = line.trim().to_string();

@@ -1,6 +1,6 @@
 // main.rs
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
-// Lab1 main
+// Lab3 main
 
 use crate::lab3::{declarations::DEBUG, play::Play, return_wrapper::ReturnWrapper};
 use std::env;

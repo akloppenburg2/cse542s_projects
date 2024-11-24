@@ -4,7 +4,7 @@
 
 use super::{
     scene_fragment::SceneFragment,
-    declarations::{DEBUG, GEN_SCRIPT_ERR},
+    declarations::{DEBUG, GEN_SCRIPT_ERR, PREPEND_INDEX, INITIAL_INDEX},
     script_gen::grab_trimmed_file_lines,
 };
 
@@ -64,7 +64,7 @@ impl Play {
             return;
         }
 
-        if tokens[CHAR_TOKEN_INDEX] == "[scene]" && tokens.len() == 1 {
+        if tokens[CHAR_TOKEN_INDEX] == "[scene]" && tokens.len() < NUM_TOKENS {
             if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
                 eprintln!("Warning: missing scene title");
             }
@@ -113,7 +113,7 @@ impl Play {
             // Config file name lines contain no whitespace, so search for that
             if !line.contains(char::is_whitespace)
             {
-                line.insert_str(0, &path);
+                line.insert_str(PREPEND_INDEX, &path);
             }
 
             Self::add_config(&line, play_config);
@@ -137,7 +137,7 @@ impl Play {
             return Err(GEN_SCRIPT_ERR);
         }
 
-        if !self.players.is_empty() && !self.players[0].title.is_empty() {
+        if !self.players.is_empty() && !self.players[INITIAL_INDEX].title.is_empty() {
             return Ok(())
         }
 
@@ -148,8 +148,8 @@ impl Play {
     pub fn recite(&mut self) {
         println!("{}", self.title);
 
-        for idx in 0..self.players.len() {
-            if idx == 0 {
+        for idx in INITIAL_INDEX..self.players.len() {
+            if idx == INITIAL_INDEX {
                 self.players[idx].enter_all();
             } else {
                 self.players[idx].enter(&self.players[idx-1])

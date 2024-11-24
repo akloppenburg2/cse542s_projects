@@ -3,7 +3,7 @@
 // 
 
 use super::{
-    declarations::{DEBUG, GEN_SCRIPT_ERR},
+    declarations::{DEBUG, GEN_SCRIPT_ERR, PREPEND_INDEX, INITIAL_INDEX},
     player::Player,
     script_gen::grab_trimmed_file_lines,
 };
@@ -15,6 +15,9 @@ pub type PlayConfig = Vec<(String, String)>;
 const LINE_NUM_TOKEN_INDEX: usize = 0;
 const LINE_TOKEN_INDEX: usize = 1;
 const NUM_TOKENS: usize = 2;
+
+// Index of the last player in the list once all others have exited
+const FINAL_PLAYER_INDEX: usize = 0;
 
 // SceneFragment struct declaration
 pub struct SceneFragment {
@@ -57,7 +60,7 @@ impl SceneFragment {
             // If we need to prepend a path to the file names, do so here
             for index in LINE_TOKEN_INDEX..tokens.len()
             {
-                tokens[index].insert_str(0, path);
+                tokens[index].insert_str(PREPEND_INDEX, path);
             }
 
             // Once modified, push tokens to the play config
@@ -117,7 +120,7 @@ impl SceneFragment {
 
     pub fn recite(&mut self) {
         let mut last_speaker = String::new();
-        let mut expected_line_num = 0;
+        let mut expected_line_num = INITIAL_INDEX;
 
         loop {
             let mut next_line_num = None;
@@ -141,7 +144,7 @@ impl SceneFragment {
                 }
             }
 
-            let mut duplicates = 0;
+            let mut duplicates = INITIAL_INDEX;
             for player in &mut self.players {
                 if player.next_line() == next_line_num {
                     player.speak(&mut last_speaker);
@@ -187,11 +190,11 @@ impl SceneFragment {
 
     pub fn exit(&self, other: &SceneFragment) {
         println!{""};
-        for idx in 0..self.players.len() {
+        for idx in INITIAL_INDEX..self.players.len() {
             let mut contains = (false, idx);
             for other_player in &other.players {
                 if other_player.name == (&self.players[self.players.len()-1-idx]).name {
-                    contains = (true, 0);
+                    contains = (true, FINAL_PLAYER_INDEX);
                 }
             }
             if !contains.0 {
@@ -202,7 +205,7 @@ impl SceneFragment {
 
     pub fn exit_all(&self) {
         println!{""};
-        for idx in 0..self.players.len() {
+        for idx in INITIAL_INDEX..self.players.len() {
             println!("[Exit {}.]", &self.players[self.players.len()-1-idx].name);
         }
     }

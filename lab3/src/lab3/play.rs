@@ -111,7 +111,7 @@ impl Play {
         for mut line in lines
         {
             // Config file name lines contain no whitespace, so search for that
-            if !line.contains(char::is_whitespace)
+            if !line.contains("[scene]")
             {
                 line.insert_str(PREPEND_INDEX, &path);
             }

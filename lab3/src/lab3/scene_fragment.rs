@@ -57,14 +57,12 @@ impl SceneFragment {
         let mut tokens: Vec<String> = line.split_whitespace().map(|s| s.to_string()).collect();
     
         if tokens.len() >= NUM_TOKENS {
-            // If we need to prepend a path to the file names, do so here
-            for index in LINE_TOKEN_INDEX..tokens.len()
-            {
-                tokens[index].insert_str(PREPEND_INDEX, path);
-            }
+
+            // Prepend the token with the path, if needed
+            tokens[LINE_TOKEN_INDEX].insert_str(PREPEND_INDEX, path);
 
             // Once modified, push tokens to the play config
-            play_config.push((tokens[LINE_NUM_TOKEN_INDEX].to_string(), tokens[LINE_TOKEN_INDEX..].join(" ")));
+            play_config.push((tokens[LINE_NUM_TOKEN_INDEX].to_string(), tokens[LINE_TOKEN_INDEX].clone()));
         }
         else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
             eprintln!("Warning: Badly formed line in config: {}", line);

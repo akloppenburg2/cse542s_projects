@@ -5,8 +5,9 @@
 // Error for script generation failure
 pub const GEN_SCRIPT_ERR: u8 = 2;
 
-// OK exit code
-pub const OK_RESULT: usize = 0;
+// OK exit codes
+pub const OK_RESULT: usize      = 0;
+pub const OK_RESULT_WRAPPER: u8 = 0;
 
 // Static variable for handling the "whinge" option (Debug mode)
 pub static DEBUG: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);

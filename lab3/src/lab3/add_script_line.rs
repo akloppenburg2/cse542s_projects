@@ -1,5 +1,5 @@
 // add_script_line.rs
-use crate::lab2::player::Player; // Ensure correct import path for Player
+use crate::lab3::player::Player; // Ensure correct import path for Player
 use crate::DEBUG;
 
 pub fn add_script_line(player: &mut Player, line: &String) {

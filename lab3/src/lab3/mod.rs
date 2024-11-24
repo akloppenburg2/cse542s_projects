@@ -1,6 +1,6 @@
 // mod.rs
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
-// lab2 modules
+// lab3 modules
 
 pub mod declarations;
 pub mod script_gen;

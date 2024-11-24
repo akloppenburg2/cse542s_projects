@@ -41,6 +41,7 @@ impl SceneFragment {
                     if let Err(e) = player.prepare(file_name) {
                         return Err(e);
                     }
+                    
                     self.players.push(player);
                 }
             }
@@ -48,11 +49,18 @@ impl SceneFragment {
         Ok(())
     }
 
-    pub fn add_config(line: &String, play_config: &mut PlayConfig) {
+    pub fn add_config(line: &String, play_config: &mut PlayConfig, path: &String) {
         // Tokenize line
-        let tokens: Vec<&str> = line.split_whitespace().collect();
+        let mut tokens: Vec<String> = line.split_whitespace().map(|s| s.to_string()).collect();
     
         if tokens.len() >= NUM_TOKENS {
+            // If we need to prepend a path to the file names, do so here
+            for index in LINE_TOKEN_INDEX..tokens.len()
+            {
+                tokens[index].insert_str(0, path);
+            }
+
+            // Once modified, push tokens to the play config
             play_config.push((tokens[LINE_NUM_TOKEN_INDEX].to_string(), tokens[LINE_TOKEN_INDEX..].join(" ")));
         }
         else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
@@ -63,17 +71,27 @@ impl SceneFragment {
     pub fn read_config(config_file: &String, play_title: &mut String, play_config: &mut PlayConfig) -> Result<(), u8> {
         // Vector for lines
         let mut lines = Vec::new();
+
+        let path: String;
         
         // Call grab_trimmed_file_lines to read and trim lines from the file
         if let Err(_) = grab_trimmed_file_lines(config_file, &mut lines) {
             eprintln!("Error: Failed to process file: '{}'", config_file);
             return Err(GEN_SCRIPT_ERR);
         }
+
+        // If config files are in a different directory we need to use the full path
+        // Get that directory here so that we can prepend it to the config file names in the next step
+        match config_file.rsplit_once('/')
+        {
+            None                => path = "".to_string(),
+            Some((dir_name, _)) => path = dir_name.to_string() + "/",
+        }
     
         // Add remaining elements to config
         for line in lines
         {
-            Self::add_config(&line, play_config);
+            Self::add_config(&line, play_config, &path);
         }
 
         Ok(())
@@ -82,7 +100,7 @@ impl SceneFragment {
     // 
     pub fn prepare(&mut self, config_file: &String) -> Result<(), u8> {
         // Initialize and then read config
-        let mut play_config = PlayConfig::new(); 
+        let mut play_config = PlayConfig::new();
         if let Err(_) = Self::read_config(config_file, &mut self.title, &mut play_config){
             eprintln!("Error: Failed to read config '{}'", config_file);
             return Err(GEN_SCRIPT_ERR);
@@ -141,9 +159,7 @@ impl SceneFragment {
 
     pub fn enter(&self, other: &SceneFragment) {
         if !self.title.trim().is_empty() {
-            println!{""};
-            println!("{}", self.title);
-            println!{""};
+            println!("\n{}\n", self.title);
         }
         for player in &self.players {
             let mut contains = false;

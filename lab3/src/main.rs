@@ -2,26 +2,18 @@
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // Lab1 main
 
-use {
-    crate::lab2::{
-        declarations::DEBUG, 
-        play::Play,
-        return_wrapper::ReturnWrapper,
-    },
-    std::{
-        env, 
-        sync::atomic::Ordering
-    },
-};
+use crate::lab3::{declarations::DEBUG, play::Play, return_wrapper::ReturnWrapper};
+use std::env;
+use std::sync::atomic::Ordering;
 
-pub mod lab2; // declare lab2 module
+pub mod lab3; // declare lab3 module
 
 // Command line argument constants
-const MAX_ARGS: usize = 3;
-const MIN_ARGS: usize = 2;
-const PROGRAM_NAME: usize = 0;
-const CONFIG_FILE: usize = 1;
-const OPT: usize = 2;
+const MAX_ARGS: usize = 3;          // Maximum number of command line arguments
+const MIN_ARGS: usize = 2;          // Minimum number of command line arguments
+const PROGRAM_NAME: usize = 0;      // Position of the name of the program in the vector produced by env::args.collect()
+const CONFIG_FILE: usize = 1;       // Position of the name of the config file in the vector produced by env::args.collect()
+const OPT: usize = 2;               // Position of the optional whinge/nowhinge argument in the vector produced by env::args.collect()
 
 const CMD_LINE_ERR: u8 = 1; // Error for command line argument issues
 

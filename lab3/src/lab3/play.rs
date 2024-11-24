@@ -86,6 +86,9 @@ impl Play {
         // Vector for lines
         let mut lines = Vec::new();
 
+        // String to hold the directory the config files are in
+        let path: String;
+
         // Call grab_trimmed_file_lines to read and trim lines from the file
         if let Err(_) = grab_trimmed_file_lines(file, &mut lines) {
             eprintln!("Error: Failed to process file: '{}'", file);
@@ -96,9 +99,23 @@ impl Play {
             eprintln!("Error: No lines in file: '{}'", file);
         }
 
-        // Add remaining elements to config
-        for line in lines
+        // If config files are in a different directory we need to use the full path
+        // Get that directory here so that we can prepend it to the config file names in the next step
+        match file.rsplit_once('/')
         {
+            None                => path = "".to_string(),
+            Some((dir_name, _)) => path = dir_name.to_string() + "/",
+        }
+
+        // Add remaining elements to config - if we need to prepend path to the config file names we do so here
+        for mut line in lines
+        {
+            // Config file name lines contain no whitespace, so search for that
+            if !line.contains(char::is_whitespace)
+            {
+                line.insert_str(0, &path);
+            }
+
             Self::add_config(&line, play_config);
         }
 
@@ -107,7 +124,7 @@ impl Play {
 
     // Main script generation function
     pub fn prepare(&mut self, config_file: &String) -> Result<(), u8> {
-        
+
         // Initialize and then read config
         let mut play_config = ScriptConfig::new(); 
         if let Err(_) = Self::read_config(config_file, &mut play_config){

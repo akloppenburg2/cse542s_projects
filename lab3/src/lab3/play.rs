@@ -4,6 +4,8 @@
 
 use super::scene_fragment::SceneFragment;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::io::{stderr, stdout, Write};
 
 // Define
 pub type ScriptConfig = Vec<(String, String)>;
@@ -23,36 +25,61 @@ impl Play {
         }
     }
 
-    // Function to process the ScriptConfig and generate the Play script
+    // Multithreaded process_config method
     pub fn process_config(&mut self, play_config: &ScriptConfig) -> Result<(), u8> {
+        let mut thread_handles = Vec::new();
+
         for (new_title, file_name) in play_config {
             if new_title == "[scene]" {
                 self.title = file_name.clone();
             } else {
-                let mut frag = SceneFragment::new(&self.title);
-                if let Err(e) = frag.prepare(file_name) {
-                    return Err(e);
-                }
-                self.players.push(Arc::new(Mutex::new(frag)));
+                let title = self.title.clone();
+                let config_file = file_name.clone();
+
+                // Spawn a thread for each SceneFragment::prepare call
+                let handle = thread::spawn(move || {
+                    let mut fragment = SceneFragment::new(&title);
+                    fragment.prepare(&config_file).map(|_| fragment)
+                });
+
+                thread_handles.push(handle);
                 self.title.clear();
             }
         }
+
+        // Join all threads and handle errors
+        for handle in thread_handles {
+            match handle.join() {
+                Ok(Ok(fragment)) => {
+                    self.players.push(Arc::new(Mutex::new(fragment)));
+                }
+                Ok(Err(e)) => {
+                    writeln!(stderr().lock(), "Error: SceneFragment preparation failed with error code {}", e).unwrap();
+                    return Err(e);
+                }
+                Err(_) => {
+                    writeln!(stderr().lock(), "Error: A thread panicked during SceneFragment::prepare.").unwrap();
+                    return Err(1); // Return general error code
+                }
+            }
+        }
+
         Ok(())
     }
 
-    // Function to prepare the play based on the given configuration file
+    // Prepare the play based on the given configuration file
     pub fn prepare(&mut self, config_file: &String) -> Result<(), u8> {
         let mut play_config = ScriptConfig::new();
 
         // Read the configuration file
         if let Err(_) = SceneFragment::read_config(config_file, &mut play_config) {
-            eprintln!("Error: Failed to read config '{}'", config_file);
+            writeln!(stderr().lock(), "Error: Failed to read config '{}'", config_file).unwrap();
             return Err(1);
         }
 
         // Process the configuration to generate the play
         if let Err(_) = self.process_config(&play_config) {
-            eprintln!("Error: Failed to process config '{}'", config_file);
+            writeln!(stderr().lock(), "Error: Failed to process config '{}'", config_file).unwrap();
             return Err(1);
         }
 
@@ -63,17 +90,17 @@ impl Play {
                     return Ok(());
                 }
             } else {
-                eprintln!("Error: Failed to lock SceneFragment during preparation.");
+                writeln!(stderr().lock(), "Error: Failed to lock SceneFragment during preparation.").unwrap();
             }
         }
 
-        eprintln!("Error: Invalid scene");
+        writeln!(stderr().lock(), "Error: Invalid scene").unwrap();
         Err(1)
     }
 
     // Function to recite the play
     pub fn recite(&mut self) {
-        println!("{}", self.title);
+        writeln!(stdout().lock(), "{}", self.title).unwrap();
 
         // Define dummy fragments outside the loop for longer lifetime
         let dummy_prev = Arc::new(Mutex::new(SceneFragment::new(&self.title)));
@@ -107,7 +134,7 @@ impl Play {
                     current_fragment.exit(next_fragment);
                 }
             } else {
-                eprintln!("Error: Failed to lock SceneFragment during recitation.");
+                writeln!(stderr().lock(), "Error: Failed to lock SceneFragment during recitation.").unwrap();
             }
         }
     }

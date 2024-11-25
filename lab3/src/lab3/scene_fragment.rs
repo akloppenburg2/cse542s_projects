@@ -9,6 +9,7 @@ use super::{
 
 use std::sync::{Arc, Mutex};
 use std::cmp::Ordering;
+use std::io::{stderr, stdout, Write};
 
 // Define PlayConfig as a vector of (character name, file name) tuples
 pub type PlayConfig = Vec<(String, String)>;
@@ -32,11 +33,11 @@ impl SceneFragment {
         }
     }
 
-    // Function to process the PlayConfig and generate the SceneFragment script
     pub fn process_config(&mut self, play_config: &PlayConfig) -> Result<(), u8> {
         for (char_name, file_name) in play_config {
-            let mut player = Player::new(char_name); // Ensure `player` is mutable
+            let mut player = Player::new(char_name);
             if let Err(e) = player.prepare(file_name) {
+                writeln!(stderr().lock(), "Error: Failed to prepare player '{}'", char_name).unwrap();
                 return Err(e);
             }
             self.players.push(Arc::new(Mutex::new(player)));
@@ -60,16 +61,13 @@ impl SceneFragment {
         let mut tokens: Vec<String> = line.split_whitespace().map(|s| s.to_string()).collect();
 
         if tokens.len() >= NUM_TOKENS {
-            // Prepend the token with the path, if needed
             tokens[LINE_TOKEN_INDEX].insert_str(PREPEND_INDEX, path);
-
-            // Once modified, push tokens to the play config
             play_config.push((
                 tokens[LINE_NUM_TOKEN_INDEX].to_string(),
                 tokens[LINE_TOKEN_INDEX].clone(),
             ));
-        } else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
-            eprintln!("Warning: Badly formed line in config: {}", line);
+        } else {
+            writeln!(stderr().lock(), "Warning: Badly formed line in config: {}", line).unwrap();
         }
     }
 
@@ -78,11 +76,10 @@ impl SceneFragment {
         let path: String;
 
         if let Err(_) = grab_trimmed_file_lines(config_file, &mut lines) {
-            eprintln!("Error: Failed to process file: '{}'", config_file);
+            writeln!(stderr().lock(), "Error: Failed to process file: '{}'", config_file).unwrap();
             return Err(GEN_SCRIPT_ERR);
         }
 
-        // Determine the directory path
         match config_file.rsplit_once('/') {
             None => path = "".to_string(),
             Some((dir_name, _)) => path = format!("{}/", dir_name),
@@ -97,14 +94,13 @@ impl SceneFragment {
 
     pub fn prepare(&mut self, config_file: &String) -> Result<(), u8> {
         let mut play_config = PlayConfig::new();
+
         if let Err(_) = Self::read_config(config_file, &mut play_config) {
-            eprintln!("Error: Failed to read config '{}'", config_file);
-            return Err(GEN_SCRIPT_ERR);
+            panic!("Error: Failed to read config '{}'", config_file);
         }
 
         if let Err(_) = self.process_config(&play_config) {
-            eprintln!("Error: Failed to process config '{}'", config_file);
-            return Err(GEN_SCRIPT_ERR);
+            panic!("Error: Failed to process config '{}'", config_file);
         }
 
         self.players.sort_by(SceneFragment::compare_players);
@@ -118,7 +114,6 @@ impl SceneFragment {
         loop {
             let mut next_line_num = None;
 
-            // Determine the next line to speak from all players
             for player_arc in &self.players {
                 if let Ok(player) = player_arc.lock() {
                     if let Some(line_num) = player.next_line() {
@@ -135,13 +130,13 @@ impl SceneFragment {
 
             if DEBUG.load(std::sync::atomic::Ordering::SeqCst) && next_line_num.unwrap() > expected_line_num {
                 for line in expected_line_num..next_line_num.unwrap() {
-                    eprintln!("Warning: Missing line {}", line);
+                    writeln!(stderr().lock(), "Warning: Missing line {}", line).unwrap();
                 }
             }
 
             let mut duplicates = INITIAL_INDEX;
             for player_arc in &mut self.players {
-                if let Ok(mut player) = player_arc.lock() { // Ensure `player` is mutable
+                if let Ok(mut player) = player_arc.lock() {
                     if player.next_line() == next_line_num {
                         player.speak(&mut last_speaker);
                         duplicates += 1;
@@ -150,7 +145,7 @@ impl SceneFragment {
             }
 
             if DEBUG.load(std::sync::atomic::Ordering::SeqCst) && duplicates > 1 {
-                eprintln!("Warning: Multiple speakers at the same time");
+                writeln!(stderr().lock(), "Warning: Multiple speakers at the same time").unwrap();
             }
 
             expected_line_num = next_line_num.unwrap() + 1;
@@ -159,12 +154,12 @@ impl SceneFragment {
 
     pub fn enter(&self, other: &SceneFragment) {
         if !self.title.trim().is_empty() {
-            println!("\n{}\n", self.title);
+            writeln!(stdout().lock(), "\n{}\n", self.title).unwrap();
         }
         for player_arc in &self.players {
             if let Ok(player) = player_arc.lock() {
                 if other.players.iter().all(|p| p.lock().map_or(true, |other_player| other_player.name != player.name)) {
-                    println!("[Enter {}.]", player.name);
+                    writeln!(stdout().lock(), "[Enter {}.]", player.name).unwrap();
                 }
             }
         }
@@ -172,29 +167,29 @@ impl SceneFragment {
 
     pub fn enter_all(&self) {
         if !self.title.trim().is_empty() {
-            println!("{}", self.title);
+            writeln!(stdout().lock(), "{}", self.title).unwrap();
         }
-        println!();
+        writeln!(stdout().lock()).unwrap();
         for player_arc in &self.players {
             if let Ok(player) = player_arc.lock() {
-                println!("[Enter {}.]", player.name);
+                writeln!(stdout().lock(), "[Enter {}.]", player.name).unwrap();
             }
         }
     }
 
     pub fn exit(&self, other: &SceneFragment) {
-        println!();
+        writeln!(stdout().lock()).unwrap();
         for idx in INITIAL_INDEX..self.players.len() {
             if other.players.iter().all(|p| p.lock().map_or(true, |other_player| other_player.name != self.players[self.players.len() - 1 - idx].lock().unwrap().name)) {
-                println!("[Exit {}.]", self.players[self.players.len() - 1 - idx].lock().unwrap().name);
+                writeln!(stdout().lock(), "[Exit {}.]", self.players[self.players.len() - 1 - idx].lock().unwrap().name).unwrap();
             }
         }
     }
 
     pub fn exit_all(&self) {
-        println!();
+        writeln!(stdout().lock()).unwrap();
         for idx in INITIAL_INDEX..self.players.len() {
-            println!("[Exit {}.]", self.players[self.players.len() - 1 - idx].lock().unwrap().name);
+            writeln!(stdout().lock(), "[Exit {}.]", self.players[self.players.len() - 1 - idx].lock().unwrap().name).unwrap();
         }
     }
 }

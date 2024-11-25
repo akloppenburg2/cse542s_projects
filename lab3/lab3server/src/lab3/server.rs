@@ -3,9 +3,10 @@
 // Lab3 Server Implementation
 
 use std::net::{TcpListener, TcpStream};
-use std::io::{Read, Write};
+use std::io::{BufRead, BufReader, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
+use std::fs::File;
 
 pub struct Server {
     listener: Option<TcpListener>,
@@ -46,12 +47,10 @@ impl Server {
         let listener = self.listener.as_ref().unwrap(); // Safe unwrap since we checked
 
         while !CANCEL_FLAG.load(Ordering::SeqCst) {
-            // Accept a connection
             match listener.accept() {
                 Ok((socket, addr)) => {
                     println!("Accepted connection from {}", addr);
 
-                    // Spawn a thread to handle the connection
                     thread::spawn(move || {
                         if let Err(e) = handle_connection(socket) {
                             eprintln!("Error handling connection: {}", e);
@@ -61,7 +60,7 @@ impl Server {
                 Err(e) => {
                     eprintln!("Error: Failed to accept connection: {}", e);
                     if CANCEL_FLAG.load(Ordering::SeqCst) {
-                        break; // Exit if cancel flag is set
+                        break;
                     }
                 }
             }
@@ -72,22 +71,52 @@ impl Server {
 }
 
 fn handle_connection(mut stream: TcpStream) -> Result<(), u8> {
-    let mut buffer = [0; 512];
-    stream.read(&mut buffer).map_err(|_| {
+    let mut reader = BufReader::new(&mut stream);
+    let mut token = String::new();
+
+    // Read the token from the client
+    reader.read_line(&mut token).map_err(|_| {
         eprintln!("Error reading from stream.");
         1
     })?;
+    token = token.trim().to_string();
 
-    println!("Request: {}", String::from_utf8_lossy(&buffer));
+    if token.eq_ignore_ascii_case("quit") {
+        println!("Quit command received. Setting cancel flag...");
+        CANCEL_FLAG.store(true, Ordering::SeqCst);
+        return Ok(());
+    }
 
-    // Respond to the client
-    let response = "HTTP/1.1 200 OK\r\n\r\nHello, World!";
-    stream.write(response.as_bytes()).map_err(|_| {
-        eprintln!("Error writing to stream.");
+    if token.contains('/') || token.contains('\\') || token.contains("..") || token.contains('$') {
+        writeln!(stream, "Invalid file name: {}", token).map_err(|_| {
+            eprintln!("Error writing to stream.");
+            1
+        })?;
+        return Err(1);
+    }
+
+    let file_path = format!("./{}", token);
+    let file = File::open(&file_path).map_err(|_| {
+        eprintln!("Error: Could not open file '{}'", token);
         1
     })?;
-    stream.flush().map_err(|_| {
-        eprintln!("Error flushing stream.");
+
+    let mut file_reader = BufReader::new(file);
+    let mut line = String::new();
+    while file_reader.read_line(&mut line).map_err(|_| {
+        eprintln!("Error reading from file '{}'", token);
+        1
+    })? > 0
+    {
+        stream.write_all(line.as_bytes()).map_err(|_| {
+            eprintln!("Error writing to stream.");
+            1
+        })?;
+        line.clear();
+    }
+
+    writeln!(stream, "\nEOF").map_err(|_| {
+        eprintln!("Error writing EOF to stream.");
         1
     })?;
 

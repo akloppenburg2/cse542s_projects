@@ -13,7 +13,7 @@ fn main() -> ReturnWrapper {
     let mut server = Server::new();
 
     // Open the server on the specified address
-    if let Err(_) = server.open("127.0.0.1:7878") {
+    if let Err(_) = server.open("127.0.0.1:8080") {
         eprintln!("Error: Could not open the server.");
         return ReturnWrapper::new(Err(1));
     }

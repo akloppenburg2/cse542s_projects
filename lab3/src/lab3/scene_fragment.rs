@@ -1,6 +1,5 @@
 // scene_fragment.rs
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
-// 
 
 use super::{
     declarations::{DEBUG, GEN_SCRIPT_ERR, PREPEND_INDEX, INITIAL_INDEX},
@@ -16,9 +15,6 @@ const LINE_NUM_TOKEN_INDEX: usize = 0;
 const LINE_TOKEN_INDEX: usize = 1;
 const NUM_TOKENS: usize = 2;
 
-// Index of the last player in the list once all others have exited
-const FINAL_PLAYER_INDEX: usize = 0;
-
 // SceneFragment struct declaration
 pub struct SceneFragment {
     pub title: String,
@@ -28,91 +24,75 @@ pub struct SceneFragment {
 impl SceneFragment {
     pub fn new(title: &String) -> Self {
         Self {
-            title: title.to_string(),
+            title: title.clone(),
             players: Vec::new(),
         }
     }
 
     // Function to process the PlayConfig and generate the SceneFragment script
     pub fn process_config(&mut self, play_config: &PlayConfig) -> Result<(), u8> {
-
-        // Iterate through each tuple in PlayConfig (character name, file name)
-        for config in play_config {
-            match config {
-                (char_name, file_name) => {
-                    let mut player = Player::new(char_name);
-                    if let Err(e) = player.prepare(file_name) {
-                        return Err(e);
-                    }
-                    
-                    self.players.push(player);
-                }
+        for (char_name, file_name) in play_config {
+            let mut player = Player::new(char_name);
+            if let Err(e) = player.prepare(file_name) {
+                return Err(e);
             }
+            self.players.push(player);
         }
         Ok(())
     }
 
     pub fn add_config(line: &String, play_config: &mut PlayConfig, path: &String) {
-        // Tokenize line
         let mut tokens: Vec<String> = line.split_whitespace().map(|s| s.to_string()).collect();
-    
-        if tokens.len() >= NUM_TOKENS {
 
+        if tokens.len() >= NUM_TOKENS {
             // Prepend the token with the path, if needed
             tokens[LINE_TOKEN_INDEX].insert_str(PREPEND_INDEX, path);
 
             // Once modified, push tokens to the play config
-            play_config.push((tokens[LINE_NUM_TOKEN_INDEX].to_string(), tokens[LINE_TOKEN_INDEX].clone()));
-        }
-        else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
+            play_config.push((
+                tokens[LINE_NUM_TOKEN_INDEX].to_string(),
+                tokens[LINE_TOKEN_INDEX].clone(),
+            ));
+        } else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
             eprintln!("Warning: Badly formed line in config: {}", line);
         }
     }
-    
-    pub fn read_config(config_file: &String, play_config: &mut PlayConfig) -> Result<(), u8> {
-        // Vector for lines
-        let mut lines = Vec::new();
 
+    pub fn read_config(config_file: &String, play_config: &mut PlayConfig) -> Result<(), u8> {
+        let mut lines = Vec::new();
         let path: String;
-        
-        // Call grab_trimmed_file_lines to read and trim lines from the file
+
         if let Err(_) = grab_trimmed_file_lines(config_file, &mut lines) {
             eprintln!("Error: Failed to process file: '{}'", config_file);
             return Err(GEN_SCRIPT_ERR);
         }
 
-        // If config files are in a different directory we need to use the full path
-        // Get that directory here so that we can prepend it to the config file names in the next step
-        match config_file.rsplit_once('/')
-        {
-            None                => path = "".to_string(),
-            Some((dir_name, _)) => path = dir_name.to_string() + "/",
+        // Determine the directory path
+        match config_file.rsplit_once('/') {
+            None => path = "".to_string(),
+            Some((dir_name, _)) => path = format!("{}/", dir_name),
         }
-    
-        // Add remaining elements to config
-        for line in lines
-        {
+
+        for line in lines {
             Self::add_config(&line, play_config, &path);
         }
 
         Ok(())
     }
 
-    // 
     pub fn prepare(&mut self, config_file: &String) -> Result<(), u8> {
-        // Initialize and then read config
         let mut play_config = PlayConfig::new();
-        if let Err(_) = Self::read_config(config_file, &mut play_config){
+        if let Err(_) = Self::read_config(config_file, &mut play_config) {
             eprintln!("Error: Failed to read config '{}'", config_file);
             return Err(GEN_SCRIPT_ERR);
         }
 
-        if let Err(_) = self.process_config(&play_config){
+        if let Err(_) = self.process_config(&play_config) {
             eprintln!("Error: Failed to process config '{}'", config_file);
             return Err(GEN_SCRIPT_ERR);
         }
 
-        self.players.sort();
+        self.players.sort_by(|a, b| a.name.cmp(&b.name));
         Ok(())
     }
 
@@ -163,14 +143,7 @@ impl SceneFragment {
             println!("\n{}\n", self.title);
         }
         for player in &self.players {
-            let mut contains = false;
-            for other_player in &other.players {
-                if other_player.name == player.name {
-                    contains = true;
-                }
-            }
-
-            if !contains {
+            if other.players.iter().all(|p| p.name != player.name) {
                 println!("[Enter {}.]", player.name);
             }
         }
@@ -180,31 +153,25 @@ impl SceneFragment {
         if !self.title.trim().is_empty() {
             println!("{}", self.title);
         }
-        println!{""};
+        println!();
         for player in &self.players {
             println!("[Enter {}.]", player.name);
         }
     }
 
     pub fn exit(&self, other: &SceneFragment) {
-        println!{""};
+        println!();
         for idx in INITIAL_INDEX..self.players.len() {
-            let mut contains = (false, idx);
-            for other_player in &other.players {
-                if other_player.name == (&self.players[self.players.len()-1-idx]).name {
-                    contains = (true, FINAL_PLAYER_INDEX);
-                }
-            }
-            if !contains.0 {
-                println!("[Exit {}.]", &self.players[self.players.len()-1-contains.1].name);
+            if other.players.iter().all(|p| p.name != self.players[self.players.len() - 1 - idx].name) {
+                println!("[Exit {}.]", self.players[self.players.len() - 1 - idx].name);
             }
         }
     }
 
     pub fn exit_all(&self) {
-        println!{""};
+        println!();
         for idx in INITIAL_INDEX..self.players.len() {
-            println!("[Exit {}.]", &self.players[self.players.len()-1-idx].name);
+            println!("[Exit {}.]", self.players[self.players.len() - 1 - idx].name);
         }
     }
 }

@@ -26,15 +26,19 @@ fn main() -> ReturnWrapper {
         eprintln!("Error parsing arguments!");
         return ReturnWrapper::new(Err(e));  // Return error for bad command line arguments
     }
-    
+
+    println!("Running script from config file: {}", config);
+
     let mut play = Play::new();
     if let Err(e) = play.prepare(&config) {
+        eprintln!("Error preparing play: {}", e);
         return ReturnWrapper::new(Err(e));
     } else {
         play.recite();
     }
 
     // Indicate successful completion
+    println!("Play recitation completed successfully.");
     ReturnWrapper::new(Ok(()))
 }
 
@@ -43,23 +47,21 @@ fn usage(name: &str) {
 }
 
 fn parse_args(config: &mut String) -> Result<(), u8> {
-    let mut args = Vec::new();
+    let args: Vec<String> = env::args().collect();
 
-    for arg in env::args() {
-        args.push(arg);
-    }
-
+    // Check if the number of arguments is valid
     if args.len() < MIN_ARGS || args.len() > MAX_ARGS || (args.len() == MAX_ARGS && args[OPT] != "whinge") {
         usage(&args[PROGRAM_NAME]);
-        return Err(CMD_LINE_ERR); // CMD_LINE_ERR should be defined in declarations.rs
+        return Err(CMD_LINE_ERR);
     }
 
     // Set the config file name
     *config = args[CONFIG_FILE].clone();
 
-    // Check if the third argument is "whinge"
+    // Enable debugging if the optional "whinge" argument is provided
     if args.len() == MAX_ARGS && args[OPT] == "whinge" {
-        DEBUG.store(true, Ordering::SeqCst); // DEBUG should be an AtomicBool defined in declarations.rs
+        DEBUG.store(true, Ordering::SeqCst);
+        println!("Debug mode enabled.");
     }
 
     Ok(())

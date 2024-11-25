@@ -1,4 +1,9 @@
-1. Benjamin Kim
+# Studio 18
+
+1. Student Names
+    1. Sam Yoo
+    2. Alex Kloppenburg
+    3. Ben Kim
 
 2. ![alt text](images/image-1.png)
 

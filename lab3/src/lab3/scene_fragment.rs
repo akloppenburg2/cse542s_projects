@@ -6,10 +6,10 @@ use super::{
     player::Player,
     script_gen::grab_trimmed_file_lines,
 };
-
 use std::sync::{Arc, Mutex};
 use std::cmp::Ordering;
 use std::io::{stderr, stdout, Write};
+use std::thread;
 
 // Define PlayConfig as a vector of (character name, file name) tuples
 pub type PlayConfig = Vec<(String, String)>;
@@ -33,15 +33,41 @@ impl SceneFragment {
         }
     }
 
+    // Multithreaded process_config method
     pub fn process_config(&mut self, play_config: &PlayConfig) -> Result<(), u8> {
+        let mut thread_handles = Vec::new();
+
         for (char_name, file_name) in play_config {
-            let mut player = Player::new(char_name);
-            if let Err(e) = player.prepare(file_name) {
-                writeln!(stderr().lock(), "Error: Failed to prepare player '{}'", char_name).unwrap();
-                return Err(e);
-            }
-            self.players.push(Arc::new(Mutex::new(player)));
+            let char_name = char_name.clone();
+            let file_name = file_name.clone();
+
+            // Spawn a thread for each Player::prepare call
+            let handle = thread::spawn(move || {
+                let mut player = Player::new(&char_name);
+                player.prepare(&file_name).map(|_| player)
+            });
+
+            thread_handles.push(handle);
         }
+
+        // Join all threads and handle errors
+        for handle in thread_handles {
+            match handle.join() {
+                Ok(Ok(player)) => {
+                    self.players.push(Arc::new(Mutex::new(player)));
+                }
+                Ok(Err(e)) => {
+                    writeln!(stderr().lock(), "Error: Failed to prepare player with error code {}", e).unwrap();
+                    return Err(e);
+                }
+                Err(_) => {
+                    writeln!(stderr().lock(), "Error: A thread panicked during Player::prepare.").unwrap();
+                    return Err(GEN_SCRIPT_ERR);
+                }
+            }
+        }
+
+        self.players.sort_by(SceneFragment::compare_players);
         Ok(())
     }
 
@@ -103,7 +129,6 @@ impl SceneFragment {
             panic!("Error: Failed to process config '{}'", config_file);
         }
 
-        self.players.sort_by(SceneFragment::compare_players);
         Ok(())
     }
 

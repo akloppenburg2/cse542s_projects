@@ -7,6 +7,9 @@ use super::{
     script_gen::grab_trimmed_file_lines,
 };
 
+use std::sync::{Arc, Mutex};
+use std::cmp::Ordering;
+
 // Define PlayConfig as a vector of (character name, file name) tuples
 pub type PlayConfig = Vec<(String, String)>;
 
@@ -18,7 +21,7 @@ const NUM_TOKENS: usize = 2;
 // SceneFragment struct declaration
 pub struct SceneFragment {
     pub title: String,
-    pub players: Vec<Player>,
+    pub players: Vec<Arc<Mutex<Player>>>,
 }
 
 impl SceneFragment {
@@ -32,13 +35,25 @@ impl SceneFragment {
     // Function to process the PlayConfig and generate the SceneFragment script
     pub fn process_config(&mut self, play_config: &PlayConfig) -> Result<(), u8> {
         for (char_name, file_name) in play_config {
-            let mut player = Player::new(char_name);
+            let mut player = Player::new(char_name); // Ensure `player` is mutable
             if let Err(e) = player.prepare(file_name) {
                 return Err(e);
             }
-            self.players.push(player);
+            self.players.push(Arc::new(Mutex::new(player)));
         }
         Ok(())
+    }
+
+    pub fn compare_players(a: &Arc<Mutex<Player>>, b: &Arc<Mutex<Player>>) -> Ordering {
+        let lock_a = a.lock();
+        let lock_b = b.lock();
+
+        if let (Ok(ref player_a), Ok(ref player_b)) = (lock_a, lock_b) {
+            if let Some(order) = player_a.partial_cmp(player_b) {
+                return order;
+            }
+        }
+        Ordering::Equal
     }
 
     pub fn add_config(line: &String, play_config: &mut PlayConfig, path: &String) {
@@ -92,7 +107,7 @@ impl SceneFragment {
             return Err(GEN_SCRIPT_ERR);
         }
 
-        self.players.sort_by(|a, b| a.name.cmp(&b.name));
+        self.players.sort_by(SceneFragment::compare_players);
         Ok(())
     }
 
@@ -104,10 +119,12 @@ impl SceneFragment {
             let mut next_line_num = None;
 
             // Determine the next line to speak from all players
-            for player in &self.players {
-                if let Some(line_num) = player.next_line() {
-                    if next_line_num.is_none() || line_num < next_line_num.unwrap() {
-                        next_line_num = Some(line_num);
+            for player_arc in &self.players {
+                if let Ok(player) = player_arc.lock() {
+                    if let Some(line_num) = player.next_line() {
+                        if next_line_num.is_none() || line_num < next_line_num.unwrap() {
+                            next_line_num = Some(line_num);
+                        }
                     }
                 }
             }
@@ -123,10 +140,12 @@ impl SceneFragment {
             }
 
             let mut duplicates = INITIAL_INDEX;
-            for player in &mut self.players {
-                if player.next_line() == next_line_num {
-                    player.speak(&mut last_speaker);
-                    duplicates += 1;
+            for player_arc in &mut self.players {
+                if let Ok(mut player) = player_arc.lock() { // Ensure `player` is mutable
+                    if player.next_line() == next_line_num {
+                        player.speak(&mut last_speaker);
+                        duplicates += 1;
+                    }
                 }
             }
 
@@ -142,9 +161,11 @@ impl SceneFragment {
         if !self.title.trim().is_empty() {
             println!("\n{}\n", self.title);
         }
-        for player in &self.players {
-            if other.players.iter().all(|p| p.name != player.name) {
-                println!("[Enter {}.]", player.name);
+        for player_arc in &self.players {
+            if let Ok(player) = player_arc.lock() {
+                if other.players.iter().all(|p| p.lock().map_or(true, |other_player| other_player.name != player.name)) {
+                    println!("[Enter {}.]", player.name);
+                }
             }
         }
     }
@@ -154,16 +175,18 @@ impl SceneFragment {
             println!("{}", self.title);
         }
         println!();
-        for player in &self.players {
-            println!("[Enter {}.]", player.name);
+        for player_arc in &self.players {
+            if let Ok(player) = player_arc.lock() {
+                println!("[Enter {}.]", player.name);
+            }
         }
     }
 
     pub fn exit(&self, other: &SceneFragment) {
         println!();
         for idx in INITIAL_INDEX..self.players.len() {
-            if other.players.iter().all(|p| p.name != self.players[self.players.len() - 1 - idx].name) {
-                println!("[Exit {}.]", self.players[self.players.len() - 1 - idx].name);
+            if other.players.iter().all(|p| p.lock().map_or(true, |other_player| other_player.name != self.players[self.players.len() - 1 - idx].lock().unwrap().name)) {
+                println!("[Exit {}.]", self.players[self.players.len() - 1 - idx].lock().unwrap().name);
             }
         }
     }
@@ -171,7 +194,7 @@ impl SceneFragment {
     pub fn exit_all(&self) {
         println!();
         for idx in INITIAL_INDEX..self.players.len() {
-            println!("[Exit {}.]", self.players[self.players.len() - 1 - idx].name);
+            println!("[Exit {}.]", self.players[self.players.len() - 1 - idx].lock().unwrap().name);
         }
     }
 }

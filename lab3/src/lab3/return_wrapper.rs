@@ -1,8 +1,9 @@
 // return_wrapper.rs
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
-// 
-
+// Lab3
 use std::process::{Termination, ExitCode};
+use std::io::{stderr, Write};
+
 use super::declarations::OK_RESULT_WRAPPER;
 
 pub struct ReturnWrapper(u8);
@@ -19,7 +20,7 @@ impl ReturnWrapper {
 impl Termination for ReturnWrapper {
     fn report(self) -> ExitCode {
         if self.0 != OK_RESULT_WRAPPER {
-            eprintln!("Error: {}", self.0);
+            writeln!(stderr().lock(), "Error: {}", self.0).unwrap();
         }
         ExitCode::from(self.0)
     }

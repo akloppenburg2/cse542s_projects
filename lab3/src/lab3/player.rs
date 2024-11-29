@@ -1,6 +1,7 @@
 // player.rs
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // Defines PlayLines and Player structs
+use std::io::{stderr, stdout, Write};
 
 use super::{
     declarations::{DEBUG, GEN_SCRIPT_ERR, INITIAL_INDEX},
@@ -39,7 +40,7 @@ impl Player {
                     self.lines.push((line_num, rest_of_line.to_string()));
                 } else {
                     if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
-                        eprintln!("Warning: Invalid line number '{}' in line '{}'", line_num_str, line);
+                        writeln!(stderr().lock(), "Warning: Invalid line number '{}' in line '{}'", line_num_str, line).unwrap();
                     }
                 }
             }
@@ -52,7 +53,7 @@ impl Player {
 
         // Call grab_trimmed_file_lines to read and trim lines from the file
         if let Err(_) = grab_trimmed_file_lines(part_name, &mut lines) {
-            eprintln!("Error: Failed to process file for part '{}'", part_name);
+            writeln!(stderr().lock(), "Error: Failed to process file for part '{}'", part_name).unwrap();
             return Err(GEN_SCRIPT_ERR);
         }
 
@@ -72,12 +73,12 @@ impl Player {
 
         if char_name != &self.name {
             *char_name = self.name.clone();
-            println!("");
-            println!("{}.", self.name);
+            writeln!(stdout().lock(), "").unwrap();
+            writeln!(stdout().lock(), "{}.", self.name).unwrap();
         }
 
         // index 1 in the PlayLines struct's vector is the string containing the line itself
-        println!("{}", self.lines[self.index].1);
+        writeln!(stdout().lock(), "{}", self.lines[self.index].1).unwrap();
         self.index += 1;
     }
 

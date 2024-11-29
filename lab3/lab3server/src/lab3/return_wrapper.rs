@@ -2,6 +2,7 @@
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 
 use std::process::{Termination, ExitCode};
+use std::io::{stderr, Write};
 
 pub const OK_RESULT_WRAPPER: u8 = 0; // Define OK_RESULT_WRAPPER directly here
 
@@ -19,7 +20,7 @@ impl ReturnWrapper {
 impl Termination for ReturnWrapper {
     fn report(self) -> ExitCode {
         if self.0 != OK_RESULT_WRAPPER {
-            eprintln!("Error: {}", self.0);
+            writeln!(stderr().lock(), "Error: {}", self.0).unwrap();
         }
         ExitCode::from(self.0)
     }

@@ -5,6 +5,7 @@
 use crate::lab3::{declarations::DEBUG, play::Play, return_wrapper::ReturnWrapper};
 use std::env;
 use std::sync::atomic::Ordering;
+use std::io::{stderr, stdout, Write};
 
 pub mod lab3; // declare lab3 module
 
@@ -23,27 +24,27 @@ fn main() -> ReturnWrapper {
 
     // Call parse_args and handle errors
     if let Err(e) = parse_args(&mut config) {
-        eprintln!("Error parsing arguments!");
+        writeln!(stderr().lock(), "Error parsing arguments!").unwrap();
         return ReturnWrapper::new(Err(e));  // Return error for bad command line arguments
     }
 
-    println!("Running script from config file: {}", config);
+    writeln!(stdout().lock(), "Running script from config file: {}", config).unwrap();
 
     let mut play = Play::new();
     if let Err(e) = play.prepare(&config) {
-        eprintln!("Error preparing play: {}", e);
+        writeln!(stderr().lock(), "Error preparing play: {}", e).unwrap();
         return ReturnWrapper::new(Err(e));
     } else {
         play.recite();
     }
 
     // Indicate successful completion
-    println!("Play recitation completed successfully.");
+    writeln!(stdout().lock(), "Play recitation completed successfully.").unwrap();
     ReturnWrapper::new(Ok(()))
 }
 
 fn usage(name: &str) {
-    println!("usage: {} <script_file_name> [whinge]", name);
+    writeln!(stdout().lock(), "usage: {} <script_file_name> [whinge]", name).unwrap();
 }
 
 fn parse_args(config: &mut String) -> Result<(), u8> {
@@ -61,7 +62,7 @@ fn parse_args(config: &mut String) -> Result<(), u8> {
     // Enable debugging if the optional "whinge" argument is provided
     if args.len() == MAX_ARGS && args[OPT] == "whinge" {
         DEBUG.store(true, Ordering::SeqCst);
-        println!("Debug mode enabled.");
+        writeln!(stdout().lock(), "Debug mode enabled.").unwrap();
     }
 
     Ok(())

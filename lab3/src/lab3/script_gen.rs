@@ -1,8 +1,10 @@
-use {
-    super::declarations::{GEN_SCRIPT_ERR, OK_RESULT},
-    std::fs::File,
-    std::io::{BufReader, BufRead},
-};
+// script_gen.rs
+// Benjamin Kim, Alex Kloppenburg, Sam Yoo
+// Lab 3
+use std::fs::File;
+use std::io::{stderr, Write, BufReader, BufRead};
+
+use super::declarations::{GEN_SCRIPT_ERR, OK_RESULT};
 
 // Function to grab and trim lines from a file
 pub fn grab_trimmed_file_lines(file_name: &String, lines: &mut Vec<String>) -> Result<(), u8> {
@@ -10,7 +12,7 @@ pub fn grab_trimmed_file_lines(file_name: &String, lines: &mut Vec<String>) -> R
     let file = match File::open(file_name) {
         Ok(file) => file,
         Err(_) => {
-            eprintln!("Error: Could not open file '{}'", file_name);
+            writeln!(stderr().lock(), "Error: Could not open file '{}'", file_name).unwrap();
             return Err(GEN_SCRIPT_ERR);
         }
     };
@@ -33,7 +35,7 @@ pub fn grab_trimmed_file_lines(file_name: &String, lines: &mut Vec<String>) -> R
                 }
             }
             Err(_) => {
-                eprintln!("Error: Could not read line from file '{}'", file_name);
+                writeln!(stderr().lock(), "Error: Could not read line from file '{}'", file_name).unwrap();
                 return Err(GEN_SCRIPT_ERR);  // Return error if reading fails
             }
         }

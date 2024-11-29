@@ -1,12 +1,11 @@
 // scene_fragment.rs
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
-// 
+// Lab 3
+use std::io::{stdout, stderr, Write};
 
-use super::{
-    declarations::{DEBUG, GEN_SCRIPT_ERR, PREPEND_INDEX, INITIAL_INDEX},
-    player::Player,
-    script_gen::grab_trimmed_file_lines,
-};
+use super::declarations::{DEBUG, GEN_SCRIPT_ERR, PREPEND_INDEX, INITIAL_INDEX};
+use super::player::Player;
+use super::script_gen::grab_trimmed_file_lines;
 
 // Define PlayConfig as a vector of (character name, file name) tuples
 pub type PlayConfig = Vec<(String, String)>;
@@ -65,7 +64,7 @@ impl SceneFragment {
             play_config.push((tokens[LINE_NUM_TOKEN_INDEX].to_string(), tokens[LINE_TOKEN_INDEX].clone()));
         }
         else if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
-            eprintln!("Warning: Badly formed line in config: {}", line);
+            writeln!(stderr().lock(), "Warning: Badly formed line in config: {}", line).unwrap();
         }
     }
     
@@ -77,7 +76,7 @@ impl SceneFragment {
         
         // Call grab_trimmed_file_lines to read and trim lines from the file
         if let Err(_) = grab_trimmed_file_lines(config_file, &mut lines) {
-            eprintln!("Error: Failed to process file: '{}'", config_file);
+            writeln!(stderr().lock(), "Error: Failed to process file: '{}'", config_file).unwrap();
             return Err(GEN_SCRIPT_ERR);
         }
 
@@ -103,12 +102,12 @@ impl SceneFragment {
         // Initialize and then read config
         let mut play_config = PlayConfig::new();
         if let Err(_) = Self::read_config(config_file, &mut play_config){
-            eprintln!("Error: Failed to read config '{}'", config_file);
+            writeln!(stderr().lock(), "Error: Failed to read config '{}'", config_file).unwrap();
             return Err(GEN_SCRIPT_ERR);
         }
 
         if let Err(_) = self.process_config(&play_config){
-            eprintln!("Error: Failed to process config '{}'", config_file);
+            writeln!(stderr().lock(), "Error: Failed to process config '{}'", config_file).unwrap();
             return Err(GEN_SCRIPT_ERR);
         }
 
@@ -138,7 +137,7 @@ impl SceneFragment {
 
             if DEBUG.load(std::sync::atomic::Ordering::SeqCst) && next_line_num.unwrap() > expected_line_num {
                 for line in expected_line_num..next_line_num.unwrap() {
-                    eprintln!("Warning: Missing line {}", line);
+                    writeln!(stderr().lock(), "Warning: Missing line {}", line).unwrap();
                 }
             }
 
@@ -151,7 +150,7 @@ impl SceneFragment {
             }
 
             if DEBUG.load(std::sync::atomic::Ordering::SeqCst) && duplicates > 1 {
-                eprintln!("Warning: Multiple speakers at the same time");
+                writeln!(stderr().lock(), "Warning: Multiple speakers at the same time").unwrap();
             }
 
             expected_line_num = next_line_num.unwrap() + 1;
@@ -160,7 +159,7 @@ impl SceneFragment {
 
     pub fn enter(&self, other: &SceneFragment) {
         if !self.title.trim().is_empty() {
-            println!("\n{}\n", self.title);
+            writeln!(stdout().lock(), "\n{}\n", self.title).unwrap();
         }
         for player in &self.players {
             let mut contains = false;
@@ -171,23 +170,23 @@ impl SceneFragment {
             }
 
             if !contains {
-                println!("[Enter {}.]", player.name);
+                writeln!(stdout().lock(), "[Enter {}.]", player.name).unwrap();
             }
         }
     }
 
     pub fn enter_all(&self) {
         if !self.title.trim().is_empty() {
-            println!("{}", self.title);
+            writeln!(stdout().lock(), "{}", self.title).unwrap();
         }
-        println!{""};
+        writeln!(stdout().lock(), "").unwrap();
         for player in &self.players {
-            println!("[Enter {}.]", player.name);
+            writeln!(stdout().lock(), "[Enter {}.]", player.name).unwrap();
         }
     }
 
     pub fn exit(&self, other: &SceneFragment) {
-        println!{""};
+        writeln!(stdout().lock(), "").unwrap();
         for idx in INITIAL_INDEX..self.players.len() {
             let mut contains = (false, idx);
             for other_player in &other.players {
@@ -196,15 +195,15 @@ impl SceneFragment {
                 }
             }
             if !contains.0 {
-                println!("[Exit {}.]", &self.players[self.players.len()-1-contains.1].name);
+                writeln!(stdout().lock(), "[Exit {}.]", &self.players[self.players.len()-1-contains.1].name).unwrap();
             }
         }
     }
 
     pub fn exit_all(&self) {
-        println!{""};
+        writeln!(stdout().lock(), "").unwrap();
         for idx in INITIAL_INDEX..self.players.len() {
-            println!("[Exit {}.]", &self.players[self.players.len()-1-idx].name);
+            writeln!(stdout().lock(), "[Exit {}.]", &self.players[self.players.len()-1-idx].name).unwrap();
         }
     }
 }

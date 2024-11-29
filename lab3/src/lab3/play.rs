@@ -2,6 +2,7 @@
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // Defines PlayLines and Player structs
 use std::sync::{Arc, Mutex};
+use std::io::{stdout, stderr, Write};
 
 use super::scene_fragment::SceneFragment;
 use super::declarations::{DEBUG, GEN_SCRIPT_ERR, PREPEND_INDEX, INITIAL_INDEX};
@@ -65,7 +66,7 @@ impl Play {
 
         if tokens[CHAR_TOKEN_INDEX] == "[scene]" && tokens.len() < NUM_TOKENS {
             if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
-                eprintln!("Warning: missing scene title");
+                writeln!(stderr().lock(), "Warning: missing scene title").unwrap();
             }
             return;
         }
@@ -76,7 +77,7 @@ impl Play {
         else {
             play_config.push((false, tokens[CONFIG_TOKEN_INDEX].to_string()));
             if DEBUG.load(std::sync::atomic::Ordering::SeqCst) && tokens.len() >= NUM_TOKENS {
-                eprintln!("Warning: additional tokens in the line");
+                writeln!(stderr().lock(), "Warning: additional tokens in the line").unwrap();
             }
         }
     }
@@ -90,12 +91,12 @@ impl Play {
 
         // Call grab_trimmed_file_lines to read and trim lines from the file
         if let Err(_) = grab_trimmed_file_lines(file, &mut lines) {
-            eprintln!("Error: Failed to process file: '{}'", file);
+            writeln!(stderr().lock(), "Error: Failed to process file: '{}'", file).unwrap();
             return Err(GEN_SCRIPT_ERR);
         }
 
         if lines.is_empty() {
-            eprintln!("Error: No lines in file: '{}'", file);
+            writeln!(stderr().lock(), "Error: No lines in file: '{}'", file).unwrap();
         }
 
         // If config files are in a different directory we need to use the full path
@@ -127,13 +128,13 @@ impl Play {
         // Initialize and then read config
         let mut play_config = ScriptConfig::new(); 
         if let Err(_) = Self::read_config(config_file, &mut play_config){
-            eprintln!("Error: Failed to read config '{}'", config_file);
+            writeln!(stderr().lock(), "Error: Failed to read config '{}'", config_file).unwrap();
             return Err(GEN_SCRIPT_ERR);
         }
 
         // Process config into struct
         if let Err(_) = self.process_config(&play_config){
-            eprintln!("Error: Failed to process config '{}'", config_file);
+            writeln!(stderr().lock(), "Error: Failed to process config '{}'", config_file).unwrap();
             return Err(GEN_SCRIPT_ERR);
         }
 
@@ -142,55 +143,55 @@ impl Play {
         {
             match self.players[INITIAL_INDEX].lock()
             {
-                Ok(ref player_ref) => if !player_ref.title.is_empty() { return Ok(()) }
-                _ => eprintln!("Unable to acquire lock on list of players!")
+                Ok(ref player_ref) => if !player_ref.title.is_empty() { return Ok(()) },
+                _ => writeln!(stderr().lock(), "Unable to acquire lock on list of players!").unwrap(),
             }
             
         }
 
-        eprintln!("Error: Invalid scene");
+        writeln!(stderr().lock(), "Error: Invalid scene").unwrap();
         return Err(GEN_SCRIPT_ERR);
     }
 
     pub fn recite(&mut self) {
-        println!("{}", self.title);
+        writeln!(stdout().lock(), "{}", self.title).unwrap();
 
         for idx in INITIAL_INDEX..self.players.len() {
             if idx == INITIAL_INDEX {
                 match self.players[idx].lock()
                 {
                     Ok(ref idx_ref) => idx_ref.enter_all(),
-                    _ => eprintln!("Error acquiring lock for enter_all!")
+                    _ => writeln!(stderr().lock(), "Error acquiring lock for enter_all!").unwrap(),
                 }
             } else {
                 match self.players[idx].lock()
                 {
                     Ok(ref idx_ref) => match self.players[idx-1].lock()
                                         { Ok(ref prev_ref) => idx_ref.enter(prev_ref),
-                                          _ => eprintln!("Error acquiring lock 2 for enter!"),}
-                    _ => eprintln!("Error acquiring lock 1 for enter!")
+                                          _ => writeln!(stderr().lock(), "Error acquiring lock 2 for enter!").unwrap(),},
+                    _ => writeln!(stderr().lock(), "Error acquiring lock 1 for enter!").unwrap(),
                 }
             }
 
             match self.players[idx].lock()
             {
                 Ok(mut idx_ref) => idx_ref.recite(),
-                _ => eprintln!("Error acquiring lock for recite!")
+                _ => writeln!(stderr().lock(), "Error acquiring lock for recite!").unwrap(),
             }
 
             if idx == self.players.len() - 1 {
                 match self.players[idx].lock()
                 {
                     Ok(ref idx_ref) => idx_ref.exit_all(),
-                    _ => eprintln!("Error acquiring lock for exit_all!")
+                    _ => writeln!(stderr().lock(), "Error acquiring lock for exit_all!").unwrap(),
                 }
             } else {
                 match self.players[idx].lock()
                 {
                     Ok(ref idx_ref) => match self.players[idx+1].lock()
                                         { Ok(ref prev_ref) => idx_ref.exit(prev_ref),
-                                          _ => eprintln!("Error acquiring lock 2 for exit!"),}
-                    _ => eprintln!("Error acquiring lock 1 for exit!")
+                                          _ => writeln!(stderr().lock(), "Error acquiring lock 2 for exit!").unwrap(),},
+                    _ => writeln!(stderr().lock(), "Error acquiring lock 1 for exit!").unwrap(),
                 }
             }
             

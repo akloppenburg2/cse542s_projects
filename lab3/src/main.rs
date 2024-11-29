@@ -43,11 +43,8 @@ fn usage(name: &str) {
 }
 
 fn parse_args(config: &mut String) -> Result<(), u8> {
-    let mut args = Vec::new();
-
-    for arg in env::args() {
-        args.push(arg);
-    }
+    
+    let args: Vec<String> = env::args().collect();
 
     if args.len() < MIN_ARGS || args.len() > MAX_ARGS || (args.len() == MAX_ARGS && args[OPT] != "whinge") {
         usage(&args[PROGRAM_NAME]);

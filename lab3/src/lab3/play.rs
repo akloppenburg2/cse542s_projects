@@ -1,17 +1,16 @@
 // play.rs
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // Defines PlayLines and Player structs
+use std::sync::{Arc, Mutex};
 
-use super::{
-    scene_fragment::SceneFragment,
-    declarations::{DEBUG, GEN_SCRIPT_ERR, PREPEND_INDEX, INITIAL_INDEX},
-    script_gen::grab_trimmed_file_lines,
-};
+use super::scene_fragment::SceneFragment;
+use super::declarations::{DEBUG, GEN_SCRIPT_ERR, PREPEND_INDEX, INITIAL_INDEX};
+use super::script_gen::grab_trimmed_file_lines;
 
 // Define 
 pub type ScriptConfig = Vec<(bool, String)>;
 
-pub type Fragments = Vec<SceneFragment>;
+pub type Fragments = Vec<Arc<Mutex<SceneFragment>>>;
 
 // Script generation constants
 const CHAR_TOKEN_INDEX: usize = 0;
@@ -47,7 +46,7 @@ impl Play {
                             Err(e) => return Err(e),
                             _ => {}    
                         }
-                        self.players.push(frag);
+                        self.players.push(Arc::new(Mutex::new(frag)));
                         self.title.clear();
                     }
                 }
@@ -132,13 +131,21 @@ impl Play {
             return Err(GEN_SCRIPT_ERR);
         }
 
+        // Process config into struct
         if let Err(_) = self.process_config(&play_config){
             eprintln!("Error: Failed to process config '{}'", config_file);
             return Err(GEN_SCRIPT_ERR);
         }
 
-        if !self.players.is_empty() && !self.players[INITIAL_INDEX].title.is_empty() {
-            return Ok(())
+        // Check for lock and if available, verify scene fragment is prepared
+        if !self.players.is_empty()
+        {
+            match self.players[INITIAL_INDEX].lock()
+            {
+                Ok(ref player_ref) => if !player_ref.title.is_empty() { return Ok(()) }
+                _ => eprintln!("Unable to acquire lock on list of players!")
+            }
+            
         }
 
         eprintln!("Error: Invalid scene");
@@ -150,17 +157,41 @@ impl Play {
 
         for idx in INITIAL_INDEX..self.players.len() {
             if idx == INITIAL_INDEX {
-                self.players[idx].enter_all();
+                match self.players[idx].lock()
+                {
+                    Ok(ref idx_ref) => idx_ref.enter_all(),
+                    _ => eprintln!("Error acquiring lock for enter_all!")
+                }
             } else {
-                self.players[idx].enter(&self.players[idx-1])
+                match self.players[idx].lock()
+                {
+                    Ok(ref idx_ref) => match self.players[idx-1].lock()
+                                        { Ok(ref prev_ref) => idx_ref.enter(prev_ref),
+                                          _ => eprintln!("Error acquiring lock 2 for enter!"),}
+                    _ => eprintln!("Error acquiring lock 1 for enter!")
+                }
             }
 
-            self.players[idx].recite();
+            match self.players[idx].lock()
+            {
+                Ok(mut idx_ref) => idx_ref.recite(),
+                _ => eprintln!("Error acquiring lock for recite!")
+            }
 
             if idx == self.players.len() - 1 {
-                self.players[idx].exit_all();
+                match self.players[idx].lock()
+                {
+                    Ok(ref idx_ref) => idx_ref.exit_all(),
+                    _ => eprintln!("Error acquiring lock for exit_all!")
+                }
             } else {
-                self.players[idx].exit(&self.players[idx+1]);
+                match self.players[idx].lock()
+                {
+                    Ok(ref idx_ref) => match self.players[idx+1].lock()
+                                        { Ok(ref prev_ref) => idx_ref.exit(prev_ref),
+                                          _ => eprintln!("Error acquiring lock 2 for exit!"),}
+                    _ => eprintln!("Error acquiring lock 1 for exit!")
+                }
             }
             
         }

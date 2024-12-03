@@ -3,6 +3,7 @@
 // Lab 3
 use std::sync::{Arc, Mutex};
 use std::io::{stdout, stderr, Write};
+use std::thread;
 
 use super::declarations::{DEBUG, GEN_SCRIPT_ERR, PREPEND_INDEX, INITIAL_INDEX};
 use super::player::Player;
@@ -15,9 +16,6 @@ pub type PlayConfig = Vec<(String, String)>;
 const LINE_NUM_TOKEN_INDEX: usize = 0;
 const LINE_TOKEN_INDEX: usize = 1;
 const NUM_TOKENS: usize = 2;
-
-// Index of the last player in the list once all others have exited
-const FINAL_PLAYER_INDEX: usize = 0;
 
 // SceneFragment struct declaration
 pub struct SceneFragment {
@@ -102,13 +100,11 @@ impl SceneFragment {
         // Initialize and then read config
         let mut play_config = PlayConfig::new();
         if let Err(_) = Self::read_config(config_file, &mut play_config){
-            writeln!(stderr().lock(), "Error: Failed to read config '{}'", config_file).unwrap();
-            return Err(GEN_SCRIPT_ERR);
+            panic!("Error: Failed to read config '{}'", config_file);
         }
 
         if let Err(_) = self.process_config(&play_config){
-            writeln!(stderr().lock(), "Error: Failed to process config '{}'", config_file).unwrap();
-            return Err(GEN_SCRIPT_ERR);
+            panic!("Error: Failed to process config '{}'", config_file);
         }
 
         self.players.sort_by(Self::player_sort);

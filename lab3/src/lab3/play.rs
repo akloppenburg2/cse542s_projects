@@ -3,6 +3,7 @@
 // Defines PlayLines and Player structs
 use std::sync::{Arc, Mutex};
 use std::io::{stdout, stderr, Write};
+use std::thread;
 
 use super::scene_fragment::SceneFragment;
 use super::declarations::{DEBUG, GEN_SCRIPT_ERR, PREPEND_INDEX, INITIAL_INDEX};
@@ -34,6 +35,7 @@ impl Play {
 
     // Function to process the ScriptConfig and generate the Play script
     pub fn process_config(&mut self, play_config: &ScriptConfig) -> Result<(), u8> {
+        let mut threads = Vec::new();
 
         // Iterate through each tuple in ScriptConfig (bool, file name/title)
         for config in play_config {
@@ -41,18 +43,41 @@ impl Play {
                 (is_new, new_title) => {
                     if *is_new {
                         self.title = new_title.to_string();
-                    } else {
-                        let mut frag = SceneFragment::new(&self.title);
-                        match frag.prepare(new_title) {
-                            Err(e) => return Err(e),
-                            _ => {}    
-                        }
-                        self.players.push(Arc::new(Mutex::new(frag)));
+                    }
+                    else {
+                        let title = self.title.clone();
+                        let config_file = new_title.clone();
+                        // Spawn a thread for each SceneFragment::prepare call
+                        let thread = thread::spawn(move || {
+                            let mut frag = SceneFragment::new(&title);
+                            frag.prepare(&config_file).map(|_| frag)
+                        });
+
+                        threads.push(thread);
                         self.title.clear();
                     }
                 }
             }
         }
+
+        // Join all threads and handle errors
+        for thread in threads {
+            match thread.join()
+            {
+                Ok(Ok(frag)) => {
+                    self.players.push(Arc::new(Mutex::new(frag)));
+                }
+                Ok(Err(e)) => {
+                    writeln!(stderr().lock(), "Error: SceneFragment preparation failed with error code {}", e).unwrap();
+                    return Err(e);
+                }
+                Err(_) => {
+                    writeln!(stderr().lock(), "Error: A thread panicked during SceneFragment::prepare()").unwrap();
+                    return Err(GEN_SCRIPT_ERR); // Return general error code
+                }
+            }
+        }
+
         Ok(())
     }
 

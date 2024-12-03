@@ -1,0 +1,4 @@
+[scene] play test
+CHAR1 char_25.txt
+CHAR2 char_2.txt
+CHAR3 char_3.txt

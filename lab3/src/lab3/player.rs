@@ -10,7 +10,7 @@ use super::script_gen::grab_trimmed_file_lines;
 pub type PlayLines = Vec<(usize, String)>;
 
 // Define Player struct which holds Player name
-#[derive(Eq, PartialOrd)]
+#[derive(Eq, Ord, Debug)]
 pub struct Player {
     pub name: String,
     pub lines: PlayLines,
@@ -104,26 +104,26 @@ impl PartialEq for Player {
     }
 }
 
-impl Ord for Player {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+impl PartialOrd for Player {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         // Case 1: Check if one player is silent and the other is not
         if self.next_line().is_none() && other.next_line().is_some() {
-            return std::cmp::Ordering::Less; // self is less
+            return Some(std::cmp::Ordering::Less); // self is less
         }
 
         if self.next_line().is_some() && other.next_line().is_none() {
-            return std::cmp::Ordering::Greater; // self is greater
+            return Some(std::cmp::Ordering::Greater); // self is greater
         }
 
         // Case 2: Both have lines, compare first line numbers
         if let (Some(self_line), Some(other_line)) = (self.next_line(), other.next_line()) {
-            if self_line > other_line {
-                return std::cmp::Ordering::Less; // self is less
-            } else {
-                return std::cmp::Ordering::Greater; // self is greater
+            if self_line < other_line {
+                return Some(std::cmp::Ordering::Less); // self is less
+            }
+            else {
+                return Some(std::cmp::Ordering::Greater); // self is greater
             }
         }
-
-        std::cmp::Ordering::Equal
+        None
     }
 }

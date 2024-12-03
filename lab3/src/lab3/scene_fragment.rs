@@ -1,6 +1,7 @@
 // scene_fragment.rs
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // Lab 3
+use std::sync::{Arc, Mutex};
 use std::io::{stdout, stderr, Write};
 
 use super::declarations::{DEBUG, GEN_SCRIPT_ERR, PREPEND_INDEX, INITIAL_INDEX};
@@ -21,7 +22,7 @@ const FINAL_PLAYER_INDEX: usize = 0;
 // SceneFragment struct declaration
 pub struct SceneFragment {
     pub title: String,
-    pub players: Vec<Player>,
+    pub players: Vec<Arc<Mutex<Player>>>,
 }
 
 impl SceneFragment {
@@ -42,9 +43,8 @@ impl SceneFragment {
                     let mut player = Player::new(char_name);
                     if let Err(e) = player.prepare(file_name) {
                         return Err(e);
-                    }
-                    
-                    self.players.push(player);
+                    }  
+                    self.players.push(Arc::new(Mutex::new(player)));
                 }
             }
         }
@@ -111,7 +111,7 @@ impl SceneFragment {
             return Err(GEN_SCRIPT_ERR);
         }
 
-        self.players.sort();
+        self.players.sort_by(Self::player_sort);
         Ok(())
     }
 
@@ -124,10 +124,18 @@ impl SceneFragment {
 
             // Determine the next line to speak from all players
             for player in &self.players {
-                if let Some(line_num) = player.next_line() {
-                    if next_line_num.is_none() || line_num < next_line_num.unwrap() {
-                        next_line_num = Some(line_num);
-                    }
+                match player.lock()
+                {
+                    Ok(ref player_ref) => {
+                        if let Some(line_num) = player_ref.next_line() 
+                        {
+                            if next_line_num.is_none() || line_num < next_line_num.unwrap() 
+                            {
+                                next_line_num = Some(line_num);
+                            }
+                        }
+                    },
+                    _ => writeln!(stderr().lock(), "Unable to acquire lock on list of players!").unwrap(),
                 }
             }
 
@@ -143,9 +151,16 @@ impl SceneFragment {
 
             let mut duplicates = INITIAL_INDEX;
             for player in &mut self.players {
-                if player.next_line() == next_line_num {
-                    player.speak(&mut last_speaker);
-                    duplicates += 1;
+                match player.lock()
+                {
+                    Ok(ref mut player_ref) => {
+                        if player_ref.next_line() == next_line_num
+                        {
+                            player_ref.speak(&mut last_speaker);
+                            duplicates += 1;
+                        }
+                    },
+                    _ => writeln!(stderr().lock(), "Unable to acquire lock on list of players!").unwrap(),
                 }
             }
 
@@ -163,14 +178,28 @@ impl SceneFragment {
         }
         for player in &self.players {
             let mut contains = false;
-            for other_player in &other.players {
-                if other_player.name == player.name {
-                    contains = true;
-                }
-            }
+            match player.lock()
+            {
+                Ok(ref player_ref) => {
+                    for other_player in &other.players 
+                    {
+                        match other_player.lock()
+                        {
+                            Ok(ref other_ref) => {
+                                if other_ref.name == player_ref.name
+                                {
+                                    contains = true;
+                                }
+                            },
+                            _ => writeln!(stderr().lock(), "Unable to acquire lock on list of players!").unwrap(),
+                        }
+                    }
 
-            if !contains {
-                writeln!(stdout().lock(), "[Enter {}.]", player.name).unwrap();
+                    if !contains {
+                        writeln!(stdout().lock(), "[Enter {}.]", player_ref.name).unwrap();
+                    }
+                },
+                _ => writeln!(stderr().lock(), "Unable to acquire lock on list of players!").unwrap(),
             }
         }
     }
@@ -181,29 +210,71 @@ impl SceneFragment {
         }
         writeln!(stdout().lock(), "").unwrap();
         for player in &self.players {
-            writeln!(stdout().lock(), "[Enter {}.]", player.name).unwrap();
+            match player.lock()
+            {
+                Ok(ref player_ref) => writeln!(stdout().lock(), "[Enter {}.]", player_ref.name).unwrap(),
+                _ => writeln!(stderr().lock(), "Unable to acquire lock on list of players!").unwrap(),
+            }
         }
     }
 
     pub fn exit(&self, other: &SceneFragment) {
         writeln!(stdout().lock(), "").unwrap();
-        for idx in INITIAL_INDEX..self.players.len() {
-            let mut contains = (false, idx);
-            for other_player in &other.players {
-                if other_player.name == (&self.players[self.players.len()-1-idx]).name {
-                    contains = (true, FINAL_PLAYER_INDEX);
-                }
-            }
-            if !contains.0 {
-                writeln!(stdout().lock(), "[Exit {}.]", &self.players[self.players.len()-1-contains.1].name).unwrap();
+        for player in self.players.iter().rev() {
+            let mut contains = false;
+            match player.lock()
+            {
+                Ok(ref player_ref) => {
+                    for other_player in &other.players {
+                        match other_player.lock()
+                        {
+                            Ok(ref other_ref) => {
+                                if other_ref.name == player_ref.name {
+                                    contains = true;
+                                }
+                            },
+                            _ => writeln!(stderr().lock(), "Unable to acquire lock on list of players!").unwrap(),
+                        }
+                    }
+                    if !contains {
+                        writeln!(stdout().lock(), "[Exit {}.]", player_ref.name).unwrap();
+                    }
+                
+                },
+                _ => writeln!(stderr().lock(), "Unable to acquire lock on list of players!").unwrap(),
             }
         }
     }
 
     pub fn exit_all(&self) {
         writeln!(stdout().lock(), "").unwrap();
-        for idx in INITIAL_INDEX..self.players.len() {
-            writeln!(stdout().lock(), "[Exit {}.]", &self.players[self.players.len()-1-idx].name).unwrap();
+        for player in self.players.iter().rev() {
+            match player.lock()
+            {
+                Ok(ref player_ref) => writeln!(stdout().lock(), "[Exit {}.]", player_ref.name).unwrap(),
+                _ => writeln!(stderr().lock(), "Unable to acquire lock on list of players!").unwrap(),
+            }
+        }
+    }
+
+    pub fn player_sort(player1: &Arc<Mutex<Player>>, player2: &Arc<Mutex<Player>>) -> std::cmp::Ordering
+    {
+        match player1.lock()
+        {
+            Ok(ref player1_ref) => {
+                match player2.lock()
+                { 
+                    Ok(ref player2_ref) => {
+                        match Player::partial_cmp(player1_ref, player2_ref)
+                        {
+                            Some(compare) => return compare,
+                            _ => return std::cmp::Ordering::Equal,
+                        }
+                    },
+                    _ => return std::cmp::Ordering::Equal,
+                }
+            },
+            _ => return std::cmp::Ordering::Equal,
         }
     }
 }

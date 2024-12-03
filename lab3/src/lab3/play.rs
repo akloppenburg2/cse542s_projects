@@ -163,7 +163,8 @@ impl Play {
                     Ok(ref idx_ref) => idx_ref.enter_all(),
                     _ => writeln!(stderr().lock(), "Error acquiring lock for enter_all!").unwrap(),
                 }
-            } else {
+            }
+            else {
                 match self.players[idx].lock()
                 {
                     Ok(ref idx_ref) => match self.players[idx-1].lock()
@@ -175,7 +176,7 @@ impl Play {
 
             match self.players[idx].lock()
             {
-                Ok(mut idx_ref) => idx_ref.recite(),
+                Ok(ref mut idx_ref) => idx_ref.recite(),
                 _ => writeln!(stderr().lock(), "Error acquiring lock for recite!").unwrap(),
             }
 

@@ -1,0 +1,4 @@
+[scene]
+Custom Play, Act I, Scene 1
+CharacterA ./test/custom_play/custom_play_scene1_characterA.txt
+CharacterB ./test/custom_play/custom_play_scene1_characterB.txt

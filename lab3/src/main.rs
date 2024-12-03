@@ -12,57 +12,64 @@ pub mod lab3; // declare lab3 module
 // Command line argument constants
 const MAX_ARGS: usize = 3;          // Maximum number of command line arguments
 const MIN_ARGS: usize = 2;          // Minimum number of command line arguments
-const PROGRAM_NAME: usize = 0;      // Position of the name of the program in the vector produced by env::args.collect()
-const CONFIG_FILE: usize = 1;       // Position of the name of the config file in the vector produced by env::args.collect()
-const OPT: usize = 2;               // Position of the optional whinge/nowhinge argument in the vector produced by env::args.collect()
-
-const CMD_LINE_ERR: u8 = 1; // Error for command line argument issues
+const CMD_LINE_ERR: u8 = 1;         // Error code for command line issues
 
 fn main() -> ReturnWrapper {
     // Declare a mutable variable for the configuration file name
     let mut config = String::new();
 
-    // Call parse_args and handle errors
+    // Parse command line arguments
     if let Err(e) = parse_args(&mut config) {
-        writeln!(stderr().lock(), "Error parsing arguments!").unwrap();
-        return ReturnWrapper::new(Err(e));  // Return error for bad command line arguments
+        writeln!(stderr().lock(), "Error: Failed to parse arguments!").unwrap();
+        return ReturnWrapper::new(Err(e)); // Return error for bad arguments
     }
 
     writeln!(stdout().lock(), "Running script from config file: {}", config).unwrap();
 
+    // Create a Play instance and prepare the play
     let mut play = Play::new();
     if let Err(e) = play.prepare(&config) {
-        writeln!(stderr().lock(), "Error preparing play: {}", e).unwrap();
+        writeln!(stderr().lock(), "Error: Failed to prepare play: {}", e).unwrap();
         return ReturnWrapper::new(Err(e));
-    } else {
-        play.recite();
     }
+
+    // Recite the play if preparation is successful
+    play.recite();
 
     // Indicate successful completion
     writeln!(stdout().lock(), "Play recitation completed successfully.").unwrap();
     ReturnWrapper::new(Ok(()))
 }
 
-fn usage(name: &str) {
-    writeln!(stdout().lock(), "usage: {} <script_file_name> [whinge]", name).unwrap();
+fn usage(program_name: &str) {
+    writeln!(
+        stdout().lock(),
+        "Usage: {} <script_file_name> [whinge]",
+        program_name
+    )
+    .unwrap();
 }
 
 fn parse_args(config: &mut String) -> Result<(), u8> {
     let args: Vec<String> = env::args().collect();
 
     // Check if the number of arguments is valid
-    if args.len() < MIN_ARGS || args.len() > MAX_ARGS || (args.len() == MAX_ARGS && args[OPT] != "whinge") {
-        usage(&args[PROGRAM_NAME]);
+    if args.len() < MIN_ARGS || args.len() > MAX_ARGS {
+        usage(&args[0]);
         return Err(CMD_LINE_ERR);
     }
 
-    // Set the config file name
-    *config = args[CONFIG_FILE].clone();
+    // Set the configuration file name
+    *config = args[1].clone();
 
-    // Enable debugging if the optional "whinge" argument is provided
-    if args.len() == MAX_ARGS && args[OPT] == "whinge" {
+    // Enable debugging mode if "whinge" argument is provided
+    if args.len() == MAX_ARGS && args[2] == "whinge" {
         DEBUG.store(true, Ordering::SeqCst);
         writeln!(stdout().lock(), "Debug mode enabled.").unwrap();
+    } else if args.len() == MAX_ARGS {
+        writeln!(stderr().lock(), "Error: Invalid optional argument '{}'", args[2]).unwrap();
+        usage(&args[0]);
+        return Err(CMD_LINE_ERR);
     }
 
     Ok(())

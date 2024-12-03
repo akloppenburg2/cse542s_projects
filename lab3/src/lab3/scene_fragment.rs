@@ -33,19 +33,30 @@ impl SceneFragment {
 
     // Function to process the PlayConfig and generate the SceneFragment script
     pub fn process_config(&mut self, play_config: &PlayConfig) -> Result<(), u8> {
+        let mut threads = Vec::new();
 
         // Iterate through each tuple in PlayConfig (character name, file name)
         for config in play_config {
             match config {
                 (char_name, file_name) => {
-                    let mut player = Player::new(char_name);
-                    if let Err(e) = player.prepare(file_name) {
-                        return Err(e);
-                    }  
-                    self.players.push(Arc::new(Mutex::new(player)));
+                    let character = char_name.clone();
+                    let config_file = file_name.clone();
+                    // Spawn a thread for each SceneFragment::prepare call
+                    let thread = thread::spawn(move || {
+                        let mut player = Player::new(&character);
+                        player.prepare(&config_file).map(|_| player)
+                    });
+
+                    threads.push(thread);
                 }
             }
         }
+
+        // Join all threads and propagate errors
+        for thread in threads {
+            self.players.push(Arc::new(Mutex::new(thread.join().unwrap().unwrap())));
+        }
+
         Ok(())
     }
 

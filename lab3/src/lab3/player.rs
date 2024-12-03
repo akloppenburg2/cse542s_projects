@@ -3,7 +3,7 @@
 // Defines PlayLines and Player structs
 use std::io::{stdout, stderr, Write};
 
-use super::declarations::{DEBUG, GEN_SCRIPT_ERR, INITIAL_INDEX};
+use super::declarations::{DEBUG, INITIAL_INDEX};
 use super::script_gen::grab_trimmed_file_lines;
 
 // Define the PlayLines struct which holds a vector of (line number, line text) tuples
@@ -51,8 +51,7 @@ impl Player {
 
         // Call grab_trimmed_file_lines to read and trim lines from the file
         if let Err(_) = grab_trimmed_file_lines(part_name, &mut lines) {
-            writeln!(stderr().lock(), "Error: Failed to process file for part '{}'", part_name).unwrap();
-            return Err(GEN_SCRIPT_ERR);
+            panic!("Error: Failed to process file for part '{}'", part_name);
         }
 
         // Add each line to the Play using add_script_line

@@ -1,21 +1,20 @@
 // main.rs
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
 // Lab3 main
-
-use crate::lab3::{declarations::DEBUG, play::Play, return_wrapper::ReturnWrapper};
 use std::env;
 use std::sync::atomic::Ordering;
 
+use crate::lab3::{declarations::DEBUG, play::Play, return_wrapper::ReturnWrapper};
+
 pub mod lab3; // declare lab3 module
 
-// Command line argument constants
+// Command line constants
 const MAX_ARGS: usize = 3;          // Maximum number of command line arguments
 const MIN_ARGS: usize = 2;          // Minimum number of command line arguments
 const PROGRAM_NAME: usize = 0;      // Position of the name of the program in the vector produced by env::args.collect()
 const CONFIG_FILE: usize = 1;       // Position of the name of the config file in the vector produced by env::args.collect()
 const OPT: usize = 2;               // Position of the optional whinge/nowhinge argument in the vector produced by env::args.collect()
-
-const CMD_LINE_ERR: u8 = 1; // Error for command line argument issues
+const CMD_LINE_ERR: u8 = 1;         // Error for command line argument issues
 
 fn main() -> ReturnWrapper {
     // Declare a mutable variable for the configuration file name

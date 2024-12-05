@@ -1,6 +1,6 @@
-// server.rs
+// main.rs
 // Benjamin Kim, Alex Kloppenburg, Sam Yoo
-// Lab3 Server Implementation
+// Lab3 Server
 use std::io::{stdout, stderr, Write};
 use std::env;
 

@@ -122,6 +122,7 @@ impl SceneFragment {
         Ok(())
     }
 
+    // players recite lines
     pub fn recite(&mut self) {
         let mut last_speaker = String::new();
         let mut expected_line_num = INITIAL_INDEX;
@@ -179,6 +180,7 @@ impl SceneFragment {
         }
     }
 
+    // players that are in scene enter
     pub fn enter(&self, other: &SceneFragment) {
         if !self.title.trim().is_empty() {
             writeln!(stdout().lock(), "\n{}\n", self.title).unwrap();
@@ -211,6 +213,7 @@ impl SceneFragment {
         }
     }
 
+    // all players enter
     pub fn enter_all(&self) {
         if !self.title.trim().is_empty() {
             writeln!(stdout().lock(), "{}", self.title).unwrap();
@@ -225,6 +228,7 @@ impl SceneFragment {
         }
     }
 
+    // player exits if not in next scene
     pub fn exit(&self, other: &SceneFragment) {
         writeln!(stdout().lock(), "").unwrap();
         for player in self.players.iter().rev() {
@@ -253,6 +257,7 @@ impl SceneFragment {
         }
     }
 
+    // all players exit
     pub fn exit_all(&self) {
         writeln!(stdout().lock(), "").unwrap();
         for player in self.players.iter().rev() {
@@ -264,6 +269,7 @@ impl SceneFragment {
         }
     }
 
+    // sorts players
     pub fn player_sort(player1: &Arc<Mutex<Player>>, player2: &Arc<Mutex<Player>>) -> std::cmp::Ordering
     {
         match player1.lock()

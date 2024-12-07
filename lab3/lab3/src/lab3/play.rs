@@ -89,6 +89,7 @@ impl Play {
             return;
         }
 
+        // Missing scene title
         if tokens[CHAR_TOKEN_INDEX] == "[scene]" && tokens.len() < NUM_TOKENS {
             if DEBUG.load(std::sync::atomic::Ordering::SeqCst) {
                 writeln!(stderr().lock(), "Warning: missing scene title").unwrap();
@@ -178,6 +179,7 @@ impl Play {
         return Err(GEN_SCRIPT_ERR);
     }
 
+    // fn that makes the player recite their lines
     pub fn recite(&mut self) {
         writeln!(stdout().lock(), "{}", self.title).unwrap();
 

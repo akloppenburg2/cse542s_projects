@@ -6,6 +6,7 @@ use std::io::{stderr, Write};
 use super::player::Player;
 use super::declarations::DEBUG;
 
+// adds the script line to the players struct
 pub fn add_script_line(player: &mut Player, line: &String) {
     if !line.trim().is_empty() {
         if let Some((line_num_str, rest_of_line)) = line.split_once(char::is_whitespace) {

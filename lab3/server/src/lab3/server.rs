@@ -84,6 +84,7 @@ impl Server {
         writeln!(stdout().lock(), "Server shutting down...").unwrap();
     }
 
+    // fn that handles each incoming connection
     fn handle_connection(mut stream: TcpStream, client: String) -> Result<(), u8> {
         let mut buffer = [0; 512];
         let bytes_read = stream.read(&mut buffer).map_err(|_| {

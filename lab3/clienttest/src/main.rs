@@ -77,10 +77,12 @@ fn main() -> Result<(), u8> {
     Ok(())
 }
 
+// usage fn
 fn usage(name: &str) {
     println!("usage: {} <network_address> <token>", name);
 }
 
+// parses arguments
 fn parse_args(address: &mut String, token: &mut String) -> Result<(), u8> {
     
     let args: Vec<String> = env::args().collect();

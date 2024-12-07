@@ -6,6 +6,7 @@ use std::io::{stderr, Write};
 
 use super::declarations::OK_RESULT_WRAPPER;
 
+// ReturnWrapper sturct def
 pub struct ReturnWrapper(u8);
 
 impl ReturnWrapper {
@@ -17,6 +18,7 @@ impl ReturnWrapper {
     }
 }
 
+// Termination trait for ReturnWrapper
 impl Termination for ReturnWrapper {
     fn report(self) -> ExitCode {
         if self.0 != OK_RESULT_WRAPPER {
